@@ -14,11 +14,12 @@ const router = express.Router()
 // Public route for business registration
 router.post("/", createBusiness)
 
-// Protected routes
+//Protected routes
 router.get("/", authenticate, authorizeAdmin, getAllBusinesses)
 router.get("/:id", authenticate, getBusinessById)
 router.put("/:id", authenticate, updateBusiness)
 router.put("/:id/subscription", authenticate, authorizeAdmin, updateSubscription)
 router.get("/:id/stats", authenticate, getBusinessStats)
+
 
 export default router

@@ -1,37 +1,29 @@
 import { Business, User, Subscription, Item, SoldItem } from "../models/index.js"
 import { sequelize } from "../models/index.js"
+import { Op } from "sequelize"
+
 
 // Create a new business
 export const createBusiness = async (req, res) => {
+  console.log("createBusiness")
   const transaction = await sequelize.transaction()
-
+  console.log("one")
   try {
     const { name, address, phone, email, ownerName, ownerEmail, ownerPhone, ownerUsername, ownerPassword } = req.body
-
+    console.log("two", req.body)
     // Check if business with this email already exists
     const existingBusiness = await Business.findOne({
       where: { email },
       transaction,
     })
+    console.log("three", existingBusiness)
 
     if (existingBusiness) {
       await transaction.rollback()
       return res.status(400).json({ message: "Business with this email already exists" })
     }
-
-    // Check if user with this email or username already exists
-    const existingUser = await User.findOne({
-      where: {
-        [sequelize.Op.or]: [{ email: ownerEmail }, { username: ownerUsername }],
-      },
-      transaction,
-    })
-
-    if (existingUser) {
-      await transaction.rollback()
-      return res.status(400).json({ message: "User with this email or username already exists" })
-    }
-
+    console.log("four")
+    
     // Create business
     const business = await Business.create(
       {
@@ -45,21 +37,40 @@ export const createBusiness = async (req, res) => {
       },
       { transaction },
     )
+    console.log("seven", business)
 
-    // Create owner user
-    const owner = await User.create(
-      {
-        name: ownerName,
-        email: ownerEmail,
-        phone: ownerPhone,
-        location: address || "Not specified",
-        username: ownerUsername,
-        password: ownerPassword,
-        role: "owner",
-        businessId: business.id,
-      },
-      { transaction },
-    )
+    // Only create owner user if all owner fields are provided
+    if (ownerName && ownerEmail && ownerPhone && ownerUsername && ownerPassword) {
+      // Check if user with this email or username already exists
+      const existingUser = await User.findOne({
+        where: {
+          [Op.or]: [{ email: ownerEmail }, { username: ownerUsername }],
+        },
+        transaction,
+      })
+      console.log("five", existingUser)
+      if (existingUser) {
+        await transaction.rollback()
+        return res.status(400).json({ message: "User with this email or username already exists" })
+      }
+      console.log("six")
+
+      // Create owner user
+      const owner = await User.create(
+        {
+          name: ownerName,
+          email: ownerEmail,
+          phone: ownerPhone,
+          location: address || "Not specified",
+          username: ownerUsername,
+          password: ownerPassword,
+          role: "owner",
+          businessId: business.id,
+        },
+        { transaction },
+      )
+      console.log("eight", owner)
+    }
 
     // Create initial subscription
     await Subscription.create(
