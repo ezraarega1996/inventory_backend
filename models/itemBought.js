@@ -3,13 +3,13 @@ import sequelize from "./database.js"
 import Item from "./item.js"
 import Business from "./business.js"
 
-const ItemTransaction = sequelize.define("ItemTransaction", {
+const ItemBought = sequelize.define("ItemBought", {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
-  fractionName: {
+  fractionId: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -39,11 +39,7 @@ const ItemTransaction = sequelize.define("ItemTransaction", {
   },
 })
 
-ItemTransaction.belongsTo(Item, { foreignKey: "itemId" })
-Item.hasMany(ItemTransaction, { foreignKey: "itemId" })
+ItemBought.belongsTo(Item, { foreignKey: "itemId" })
+ItemBought.belongsTo(Business, { foreignKey: "businessId" })
 
-// Add business association
-ItemTransaction.belongsTo(Business, { foreignKey: "businessId" })
-Business.hasMany(ItemTransaction, { foreignKey: "businessId" })
-
-export default ItemTransaction
+export default ItemBought

@@ -35,7 +35,7 @@ export const getSaleById = async (req, res) => {
 
 export const createSale = async (req, res) => {
   try {
-    const { itemId, quantity, fractionName, amount, expectedAmount, status } = req.body
+    const { itemId, quantity, fractionId, amount, expectedAmount, status } = req.body
 
     // Check if item exists and belongs to the business
     const item = await Item.findOne({
@@ -55,7 +55,7 @@ export const createSale = async (req, res) => {
       itemId,
       salesmanId: req.user.id,
       quantity,
-      fractionName,
+      fractionId,
       amount,
       expectedAmount,
       status: status || "completed",

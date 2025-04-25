@@ -1,6 +1,8 @@
 import { User, sequelize } from "../models/index.js"
 import { checkSubscriptionLimits } from "../config/subscriptionPlans.js"
 import { Business } from "../models/index.js"
+import { Op } from "sequelize"
+
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -84,7 +86,7 @@ export const createUser = async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({
       where: {
-        [sequelize.Op.or]: [{ username }, { email }],
+        [Op.or]: [{ username }, { email }],
       },
     })
 

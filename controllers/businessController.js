@@ -6,7 +6,7 @@ import { Op } from "sequelize"
 // Create a new business
 export const createBusiness = async (req, res) => {
   console.log("createBusiness")
-  const transaction = await sequelize.transaction()
+  const bought = await sequelize.bought()
   console.log("one")
   try {
     const { name, address, phone, email, ownerName, ownerEmail, ownerPhone, ownerUsername, ownerPassword } = req.body
@@ -14,12 +14,12 @@ export const createBusiness = async (req, res) => {
     // Check if business with this email already exists
     const existingBusiness = await Business.findOne({
       where: { email },
-      transaction,
+      bought,
     })
     console.log("three", existingBusiness)
 
     if (existingBusiness) {
-      await transaction.rollback()
+      await bought.rollback()
       return res.status(400).json({ message: "Business with this email already exists" })
     }
     console.log("four")
@@ -35,7 +35,7 @@ export const createBusiness = async (req, res) => {
         subscriptionPlan: "free",
         trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
       },
-      { transaction },
+      { bought },
     )
     console.log("seven", business)
 
@@ -46,11 +46,11 @@ export const createBusiness = async (req, res) => {
         where: {
           [Op.or]: [{ email: ownerEmail }, { username: ownerUsername }],
         },
-        transaction,
+        bought,
       })
       console.log("five", existingUser)
       if (existingUser) {
-        await transaction.rollback()
+        await bought.rollback()
         return res.status(400).json({ message: "User with this email or username already exists" })
       }
       console.log("six")
@@ -67,7 +67,7 @@ export const createBusiness = async (req, res) => {
           role: "owner",
           businessId: business.id,
         },
-        { transaction },
+        { bought },
       )
       console.log("eight", owner)
     }
@@ -82,10 +82,10 @@ export const createBusiness = async (req, res) => {
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
         amount: 0,
       },
-      { transaction },
+      { bought },
     )
 
-    await transaction.commit()
+    await bought.commit()
 
     res.status(201).json({
       message: "Business created successfully",
@@ -101,7 +101,7 @@ export const createBusiness = async (req, res) => {
       },
     })
   } catch (error) {
-    await transaction.rollback()
+    await bought.rollback()
     res.status(500).json({ message: "Error creating business", error: error.message })
   }
 }

@@ -7,10 +7,10 @@ import userRoutes from "./routes/userRoutes.js"
 import categoryRoutes from "./routes/categoryRoutes.js"
 import itemRoutes from "./routes/itemRoutes.js"
 import fractionRoutes from "./routes/fractionRoutes.js"
-import transactionRoutes from "./routes/transactionRoutes.js"
 import salesRoutes from "./routes/salesRoutes.js"
 import businessRoutes from "./routes/businessRoutes.js"
 import paymentRoutes from "./routes/paymentRoutes.js"
+import boughtRoutes from "./routes/boughtRoutes.js"
 
 dotenv.config()
 
@@ -30,10 +30,10 @@ app.use("/api/users", userRoutes)
 app.use("/api/categories", categoryRoutes)
 app.use("/api/items", itemRoutes)
 app.use("/api/fractions", fractionRoutes)
-app.use("/api/transactions", transactionRoutes)
 app.use("/api/sales", salesRoutes)
 app.use("/api/businesses", businessRoutes)
 app.use("/api/payments", paymentRoutes)
+app.use("/api/boughts", boughtRoutes)
 
 // Test database connection
 sequelize

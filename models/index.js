@@ -3,7 +3,7 @@ import User from "./user.js"
 import Category from "./category.js"
 import Item from "./item.js"
 import Fraction from "./fraction.js"
-import ItemTransaction from "./itemTransaction.js"
+import ItemBought from "./itemBought.js"
 import SoldItem from "./soldItem.js"
 import Business from "./business.js"
 import Subscription from "./subscription.js"
@@ -17,4 +17,4 @@ const syncDatabase = async () => {
   }
 }
 
-export { sequelize, User, Category, Item, Fraction, ItemTransaction, SoldItem, Business, Subscription, syncDatabase }
+export { sequelize, User, Category, Item, Fraction, ItemBought, SoldItem, Business, Subscription, syncDatabase }

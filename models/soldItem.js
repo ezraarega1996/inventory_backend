@@ -18,7 +18,7 @@ const SoldItem = sequelize.define("SoldItem", {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
-  fractionName: {
+  fractionId: {
     type: DataTypes.STRING,
     allowNull: false,
   },
