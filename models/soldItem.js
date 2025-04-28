@@ -47,8 +47,8 @@ const SoldItem = sequelize.define("SoldItem", {
 SoldItem.belongsTo(Item, { foreignKey: "itemId" })
 Item.hasMany(SoldItem, { foreignKey: "itemId" })
 
-SoldItem.belongsTo(User, { foreignKey: "salesmanId" })
-User.hasMany(SoldItem, { foreignKey: "salesmanId" })
+SoldItem.belongsTo(User, { foreignKey: "salesmanId", as: "salesman" })
+User.hasMany(SoldItem, { foreignKey: "salesmanId", as: "sales" })
 
 // Add business association
 SoldItem.belongsTo(Business, { foreignKey: "businessId" })

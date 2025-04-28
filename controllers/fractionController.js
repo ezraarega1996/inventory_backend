@@ -1,4 +1,5 @@
 import { Fraction, Item } from "../models/index.js"
+import { Op } from "sequelize"
 
 export const getAllFractions = async (req, res) => {
   try {
@@ -34,7 +35,7 @@ export const getFractionById = async (req, res) => {
 
 export const createFraction = async (req, res) => {
   try {
-    const { name, ratio, price, itemId } = req.body
+    const { name, ratio, price, itemId, isUnit } = req.body
 
     // Check if item exists and belongs to the business
     const item = await Item.findOne({
@@ -48,6 +49,23 @@ export const createFraction = async (req, res) => {
       return res.status(404).json({ message: "Item not found" })
     }
 
+    // If trying to create a unit fraction, check if there's already a unit fraction
+    if (isUnit) {
+      const existingUnitFraction = await Fraction.findOne({
+        where: {
+          itemId,
+          isUnit: true,
+          businessId: req.user.businessId,
+        },
+      })
+
+      if (existingUnitFraction) {
+        return res.status(400).json({ 
+          message: "An item can only have one unit fraction. Please unmark the existing unit fraction first." 
+        })
+      }
+    }
+
     // Create fraction
     const fraction = await Fraction.create({
       name,
@@ -55,6 +73,7 @@ export const createFraction = async (req, res) => {
       price,
       itemId,
       businessId: req.user.businessId,
+      isUnit: isUnit ?? false,
     })
 
     // Fetch the created fraction with its item
@@ -70,7 +89,7 @@ export const createFraction = async (req, res) => {
 
 export const updateFraction = async (req, res) => {
   try {
-    const { name, ratio, price } = req.body
+    const { name, ratio, price, isUnit } = req.body
     const fraction = await Fraction.findOne({
       where: {
         id: req.params.id,
@@ -82,10 +101,29 @@ export const updateFraction = async (req, res) => {
       return res.status(404).json({ message: "Fraction not found" })
     }
 
+    // If trying to make this fraction a unit, check if there's already a unit fraction
+    if (isUnit && !fraction.isUnit) {
+      const existingUnitFraction = await Fraction.findOne({
+        where: {
+          itemId: fraction.itemId,
+          isUnit: true,
+          businessId: req.user.businessId,
+          id: { [Op.ne]: fraction.id }, // Exclude current fraction
+        },
+      })
+
+      if (existingUnitFraction) {
+        return res.status(400).json({ 
+          message: "An item can only have one unit fraction. Please unmark the existing unit fraction first." 
+        })
+      }
+    }
+
     // Update fraction
     fraction.name = name || fraction.name
     fraction.ratio = ratio || fraction.ratio
     fraction.price = price || fraction.price
+    fraction.isUnit = isUnit ?? fraction.isUnit
     await fraction.save()
 
     // Fetch the updated fraction with its item

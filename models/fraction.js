@@ -21,6 +21,11 @@ const Fraction = sequelize.define("Fraction", {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
+  isUnit: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
 })
 
 Fraction.belongsTo(Item, { foreignKey: "itemId" })

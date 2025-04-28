@@ -4,10 +4,27 @@ export const getAllSales = async (req, res) => {
   try {
     const sales = await SoldItem.findAll({
       where: { businessId: req.user.businessId },
-      include: [{ model: Item }, { model: User, as: "salesman", attributes: ["id", "name", "username"] }],
+      include: [
+        { 
+          model: Item,
+          include: [{ model: Fraction }]
+        }, 
+        { model: User, as: "salesman", attributes: ["id", "name", "username"] }
+      ],
       order: [["soldTime", "DESC"]],
     })
-    res.json(sales)
+
+    // Transform the response to include fraction data directly
+    const transformedSales = sales.map(sale => {
+      const saleJson = sale.toJSON();
+      const fraction = saleJson.Item?.Fractions?.find(f => f.id === saleJson.fractionId);
+      if (fraction) {
+        saleJson.fraction = fraction;
+      }
+      return saleJson;
+    });
+
+    res.json(transformedSales)
   } catch (error) {
     res.status(500).json({ message: "Error fetching sales", error: error.message })
   }
@@ -20,14 +37,27 @@ export const getSaleById = async (req, res) => {
         id: req.params.id,
         businessId: req.user.businessId,
       },
-      include: [{ model: Item }, { model: User, as: "salesman", attributes: ["id", "name", "username"] }],
+      include: [
+        { 
+          model: Item,
+          include: [{ model: Fraction }]
+        }, 
+        { model: User, as: "salesman", attributes: ["id", "name", "username"] }
+      ],
     })
 
     if (!sale) {
       return res.status(404).json({ message: "Sale not found" })
     }
 
-    res.json(sale)
+    // Transform the response to include fraction data directly
+    const saleJson = sale.toJSON();
+    const fraction = saleJson.Item?.Fractions?.find(f => f.id === saleJson.fractionId);
+    if (fraction) {
+      saleJson.fraction = fraction;
+    }
+
+    res.json(saleJson)
   } catch (error) {
     res.status(500).json({ message: "Error fetching sale", error: error.message })
   }
@@ -36,7 +66,7 @@ export const getSaleById = async (req, res) => {
 export const createSale = async (req, res) => {
   try {
     const { itemId, quantity, fractionId, amount, expectedAmount, status } = req.body
-
+    console.log("One", req.body);
     // Check if item exists and belongs to the business
     const item = await Item.findOne({
       where: {
@@ -45,11 +75,11 @@ export const createSale = async (req, res) => {
       },
       include: [{ model: Fraction }],
     })
-
+    console.log("Two", item);
     if (!item) {
       return res.status(404).json({ message: "Item not found" })
     }
-
+    console.log("Three");
     // Create sale
     const sale = await SoldItem.create({
       itemId,
@@ -61,14 +91,29 @@ export const createSale = async (req, res) => {
       status: status || "completed",
       businessId: req.user.businessId,
     })
-
+    console.log("Four");
     // Fetch the created sale with its item and salesman
     const createdSale = await SoldItem.findByPk(sale.id, {
-      include: [{ model: Item }, { model: User, as: "salesman", attributes: ["id", "name", "username"] }],
+      include: [
+        { 
+          model: Item,
+          include: [{ model: Fraction }]
+        }, 
+        { model: User, as: "salesman", attributes: ["id", "name", "username"] }
+      ],
     })
+    console.log("Five", createdSale); 
 
-    res.status(201).json(createdSale)
+    // Transform the response to include fraction data directly
+    const saleJson = createdSale.toJSON();
+    const fraction = saleJson.Item?.Fractions?.find(f => f.id === saleJson.fractionId);
+    if (fraction) {
+      saleJson.fraction = fraction;
+    }
+
+    res.status(201).json(saleJson)
   } catch (error) {
+    console.log("Six", error);
     res.status(500).json({ message: "Error creating sale", error: error.message })
   }
 }
@@ -146,7 +191,13 @@ export const getSalesByUser = async (req, res) => {
         salesmanId: req.user.id,
         businessId: req.user.businessId,
       },
-      include: [{ model: Item }],
+      include: [
+        { 
+          model: Item,
+          include: [{ model: Fraction }]
+        },
+        { model: User, as: "salesman", attributes: ["id", "name", "username"] }
+      ],
       order: [["soldTime", "DESC"]],
     })
     res.json(sales)
