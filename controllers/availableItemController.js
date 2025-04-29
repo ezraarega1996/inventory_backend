@@ -1,4 +1,4 @@
-import { AvailableItem, Item, Bought, SoldItem } from "../models/index.js"
+import { AvailableItem, Item, Bought, SoldItem, Fraction } from "../models/index.js"
 import { Op } from "sequelize"
 
 export const calculateAvailableItems = async (req, res) => {
@@ -37,19 +37,40 @@ export const calculateAvailableItems = async (req, res) => {
       const latestBought = item.Boughts?.sort((a, b) => b.createdTime - a.createdTime)[0]
       const soldPrice = latestBought?.fractionSoldPrice || 0
 
-      // Update or create available item
-      await AvailableItem.upsert({
-        itemId: item.id,
-        businessId,
-        quantity: availableQuantity,
-        soldPrice,
-      })
+      // Find existing available item
+      const existingAvailableItem = await AvailableItem.findOne({
+        where: {
+          itemId: item.id,
+          businessId,
+        },
+      });
+
+      if (existingAvailableItem) {
+        // Update existing available item
+        await existingAvailableItem.update({
+          quantity: availableQuantity,
+          soldPrice,
+        });
+      } else {
+        // Create new available item only if it doesn't exist
+        await AvailableItem.create({
+          itemId: item.id,
+          businessId,
+          quantity: availableQuantity,
+          soldPrice,
+        });
+      }
     }
 
     // Fetch all available items with their items
     const availableItems = await AvailableItem.findAll({
       where: { businessId },
-      include: [{ model: Item }],
+      include: [
+        { 
+          model: Item,
+          include: [{ model: Fraction }]
+        }
+      ],
     })
 
     res.json(availableItems)
@@ -62,7 +83,13 @@ export const getAllAvailableItems = async (req, res) => {
   try {
     const availableItems = await AvailableItem.findAll({
       where: { businessId: req.user.businessId },
-      include: [{ model: Item }],
+      include: [
+        { 
+          model: Item,
+          include: [{ model: Fraction }]
+        }
+      ],
+      order: [["createdAt", "DESC"]],
     })
     res.json(availableItems)
   } catch (error) {
@@ -77,7 +104,12 @@ export const getAvailableItemById = async (req, res) => {
         id: req.params.id,
         businessId: req.user.businessId,
       },
-      include: [{ model: Item }],
+      include: [
+        { 
+          model: Item,
+          include: [{ model: Fraction }]
+        }
+      ],
     })
 
     if (!availableItem) {

@@ -8,6 +8,7 @@ import SoldItem from "./soldItem.js"
 import Business from "./business.js"
 import Subscription from "./subscription.js"
 import AvailableItem from "./availableItem.js"
+import Bought from "./itemBought.js"
 
 const syncDatabase = async () => {
   try {
@@ -18,4 +19,4 @@ const syncDatabase = async () => {
   }
 }
 
-export { sequelize, User, Category, Item, Fraction, ItemBought, SoldItem, Business, Subscription, AvailableItem, syncDatabase }
+export { sequelize, User, Category, Item, Fraction, ItemBought, SoldItem, Business, Subscription, AvailableItem, Bought, syncDatabase }

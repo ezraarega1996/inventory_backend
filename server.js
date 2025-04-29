@@ -11,6 +11,8 @@ import salesRoutes from "./routes/salesRoutes.js"
 import businessRoutes from "./routes/businessRoutes.js"
 import paymentRoutes from "./routes/paymentRoutes.js"
 import boughtRoutes from "./routes/boughtRoutes.js"
+import availableItemRoutes from "./routes/availableItemRoutes.js"
+
 
 dotenv.config()
 
@@ -34,6 +36,7 @@ app.use("/api/sales", salesRoutes)
 app.use("/api/businesses", businessRoutes)
 app.use("/api/payments", paymentRoutes)
 app.use("/api/boughts", boughtRoutes)
+app.use("/api/available-items", availableItemRoutes)
 
 // Test database connection
 sequelize

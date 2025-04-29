@@ -13,6 +13,10 @@ const AvailableItem = sequelize.define("AvailableItem", {
     type: DataTypes.UUID,
     allowNull: false,
   },
+  businessId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+  },
   quantity: {
     type: DataTypes.FLOAT,
     allowNull: false,

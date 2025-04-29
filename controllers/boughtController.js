@@ -44,18 +44,16 @@ export const getBoughtById = async (req, res) => {
 }
 
 // Helper function to convert quantity to unit fraction
-// Helper function to convert quantity to unit fraction
 async function convertToUnitQuantity(itemId, fractionId, quantity) {
-
-  // Fetch the fraction by ID
+  console.log("convertToUnitQuantity1");
   const fraction = await Fraction.findOne({
-    where: { id: fractionId },
+    where: { id: fractionId }
   });
-
+  console.log("convertToUnitQuantity2");
   if (!fraction) {
     throw new Error('Fraction not found');
   }
-
+  console.log("convertToUnitQuantity3");
   // If this is already a unit fraction, return the quantity as is
   if (fraction.isUnit) {
     return quantity;
@@ -65,29 +63,22 @@ async function convertToUnitQuantity(itemId, fractionId, quantity) {
   const unitFraction = await Fraction.findOne({
     where: {
       itemId,
-      isUnit: true,
-    },
+      isUnit: true
+    }
   });
-
+  console.log("convertToUnitQuantity4");
   if (!unitFraction) {
+    console.log("convertToUnitQuantity5");
     throw new Error('Unit fraction not found for this item');
   }
-
+  console.log("convertToUnitQuantity5");
   // Convert quantity to unit fraction equivalent
   return (quantity * fraction.ratio) / unitFraction.ratio;
 }
 
 export const createBought = async (req, res) => {
   try {
-    const { itemId, fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate } = req.body;
-    // Validate the fractionId
-    const fraction = await Fraction.findOne({
-      where: { id: fractionId, itemId },
-    });
-
-    if (!fraction) {
-      return res.status(400).json({ message: `Invalid fractionId: ${fractionId} for itemId: ${itemId}` });
-    }
+    const { itemId, fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate } = req.body
 
     // Check if item exists and belongs to the business
     const item = await Item.findOne({
@@ -95,11 +86,12 @@ export const createBought = async (req, res) => {
         id: itemId,
         businessId: req.user.businessId,
       },
-    });
+    })
 
     if (!item) {
-      return res.status(404).json({ message: "Item not found" });
+      return res.status(404).json({ message: "Item not found" })
     }
+
     // Create bought item
     const bought = await ItemBought.create({
       itemId,
@@ -110,11 +102,11 @@ export const createBought = async (req, res) => {
       location,
       expiryDate: expiryDate || null,
       businessId: req.user.businessId,
-    });
+    })
 
     // Get all bought items for this item
     const boughts = await ItemBought.findAll({
-      where: {
+      where: { 
         itemId,
         businessId: req.user.businessId,
       },
@@ -123,7 +115,6 @@ export const createBought = async (req, res) => {
 
     // Calculate total bought quantity in unit fractions
     let totalBought = 0;
-
     for (const bought of boughts) {
       const unitQuantity = await convertToUnitQuantity(itemId, bought.fractionId, bought.quantity);
       totalBought += unitQuantity;
@@ -131,7 +122,7 @@ export const createBought = async (req, res) => {
 
     // Get all sold items for this item
     const solds = await SoldItem.findAll({
-      where: {
+      where: { 
         itemId,
         businessId: req.user.businessId,
       },
@@ -148,24 +139,41 @@ export const createBought = async (req, res) => {
     // Calculate available quantity
     const availableQuantity = totalBought - totalSold;
 
-    // Update or create available item
-    await AvailableItem.upsert({
-      itemId,
-      businessId: req.user.businessId,
-      quantity: availableQuantity,
-      soldPrice: fractionSoldPrice,
+    // Find existing available item
+    const existingAvailableItem = await AvailableItem.findOne({
+      where: {
+        itemId,
+        businessId: req.user.businessId,
+      },
     });
+
+    if (existingAvailableItem) {
+      // Update existing available item
+      await existingAvailableItem.update({
+        quantity: availableQuantity,
+        soldPrice: fractionSoldPrice,
+      });
+    } else {
+      // Create new available item only if it doesn't exist
+      await AvailableItem.create({
+        itemId,
+        businessId: req.user.businessId,
+        quantity: availableQuantity,
+        soldPrice: fractionSoldPrice,
+      });
+    }
 
     // Fetch the created bought item with its item
     const createdBought = await ItemBought.findByPk(bought.id, {
       include: [{ model: Item }],
     });
 
-    res.status(201).json(createdBought);
+    res.status(201).json(createdBought)
   } catch (error) {
-    res.status(500).json({ message: "Error creating bought item", error: error.message });
+    res.status(500).json({ message: "Error creating bought item", error: error.message })
   }
-};
+}
+
 export const updateBought = async (req, res) => {
   try {
     const { fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate } = req.body
@@ -225,13 +233,29 @@ export const updateBought = async (req, res) => {
     // Calculate available quantity
     const availableQuantity = totalBought - totalSold;
 
-    // Update available item
-    await AvailableItem.upsert({
-      itemId: bought.itemId,
-      businessId: req.user.businessId,
-      quantity: availableQuantity,
-      soldPrice: fractionSoldPrice,
-    })
+    // Find existing available item
+    const existingAvailableItem = await AvailableItem.findOne({
+      where: {
+        itemId: bought.itemId,
+        businessId: req.user.businessId,
+      },
+    });
+
+    if (existingAvailableItem) {
+      // Update existing available item
+      await existingAvailableItem.update({
+        quantity: availableQuantity,
+        soldPrice: fractionSoldPrice,
+      });
+    } else {
+      // Create new available item only if it doesn't exist
+      await AvailableItem.create({
+        itemId: bought.itemId,
+        businessId: req.user.businessId,
+        quantity: availableQuantity,
+        soldPrice: fractionSoldPrice,
+      });
+    }
 
     res.json(bought)
   } catch (error) {
@@ -289,13 +313,29 @@ export const deleteBought = async (req, res) => {
     // Calculate available quantity
     const availableQuantity = totalBought - totalSold;
 
-    // Update available item
-    await AvailableItem.upsert({
-      itemId: bought.itemId,
-      businessId: req.user.businessId,
-      quantity: availableQuantity,
-      soldPrice: bought.fractionSoldPrice,
-    })
+    // Find existing available item
+    const existingAvailableItem = await AvailableItem.findOne({
+      where: {
+        itemId: bought.itemId,
+        businessId: req.user.businessId,
+      },
+    });
+
+    if (existingAvailableItem) {
+      // Update existing available item
+      await existingAvailableItem.update({
+        quantity: availableQuantity,
+        soldPrice: bought.fractionSoldPrice,
+      });
+    } else {
+      // Create new available item only if it doesn't exist
+      await AvailableItem.create({
+        itemId: bought.itemId,
+        businessId: req.user.businessId,
+        quantity: availableQuantity,
+        soldPrice: bought.fractionSoldPrice,
+      });
+    }
 
     res.json({ message: "Bought item deleted successfully" })
   } catch (error) {
