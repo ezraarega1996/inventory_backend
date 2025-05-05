@@ -72,7 +72,6 @@ export const createSale = async (req, res) => {
     if (!itemId || !fractionId || !quantity || !amount) {
       return res.status(400).json({ message: 'All fields are required' });
     }
-
     // Get item and fraction details
     const item = await Item.findByPk(itemId, {
       include: [{ model: Fraction, as: 'fractions' }]
@@ -107,6 +106,7 @@ export const createSale = async (req, res) => {
       businessId: req.user.businessId
     });
 
+
     await sale.save();
 
     // Update available items
@@ -120,10 +120,8 @@ export const createSale = async (req, res) => {
       availableItem.quantity -= quantityInUnits;
       await availableItem.save();
     }
-
     res.status(201).json(sale);
   } catch (error) {
-    console.error('Error creating sale:', error);
     res.status(500).json({ message: 'Error creating sale' });
   }
 };
