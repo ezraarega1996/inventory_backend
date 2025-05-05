@@ -29,7 +29,7 @@ const Fraction = sequelize.define("Fraction", {
 })
 
 Fraction.belongsTo(Item, { foreignKey: "itemId" })
-Item.hasMany(Fraction, { foreignKey: "itemId" })
+Item.hasMany(Fraction, {as: "fractions", foreignKey: "itemId" })
 
 // Add business association
 Fraction.belongsTo(Business, { foreignKey: "businessId" })

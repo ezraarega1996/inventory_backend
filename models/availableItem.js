@@ -1,6 +1,6 @@
 import { DataTypes } from "sequelize"
 import sequelize from "./database.js"
-import Item from "./item.js"
+import { User, Item, ItemBought, SoldItem } from "./index.js"
 import Business from "./business.js"
 
 const AvailableItem = sequelize.define("AvailableItem", {
@@ -18,18 +18,29 @@ const AvailableItem = sequelize.define("AvailableItem", {
     allowNull: false,
   },
   quantity: {
-    type: DataTypes.FLOAT,
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
     defaultValue: 0,
   },
   soldPrice: {
-    type: DataTypes.FLOAT,
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
+  },
+  salesmanId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: User,
+      key: "id",
+    },
   },
 })
 
-AvailableItem.belongsTo(Item, { foreignKey: "itemId" })
-Item.hasOne(AvailableItem, { foreignKey: "itemId" })
+// Define associations
+AvailableItem.belongsTo(User, { as: 'salesman', foreignKey: "salesmanId" })
+AvailableItem.belongsTo(Item, {as: 'item', foreignKey: "itemId" })
+AvailableItem.hasMany(ItemBought, { as: 'boughtTransactions', foreignKey: 'itemId' })
+AvailableItem.hasMany(SoldItem, { as: 'soldTransactions', foreignKey: 'itemId' })
 
 // Add business association
 AvailableItem.belongsTo(Business, { foreignKey: "businessId" })

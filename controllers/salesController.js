@@ -1,4 +1,4 @@
-import { SoldItem, Item, User, Fraction, sequelize } from "../models/index.js"
+import { SoldItem, Item, User, Fraction, AvailableItem, sequelize } from "../models/index.js"
 
 export const getAllSales = async (req, res) => {
   try {
@@ -6,8 +6,8 @@ export const getAllSales = async (req, res) => {
       where: { businessId: req.user.businessId },
       include: [
         { 
-          model: Item,
-          include: [{ model: Fraction }]
+           model: Item,
+          include: [{ model: Fraction, as: "fractions" }]
         }, 
         { model: User, as: "salesman", attributes: ["id", "name", "username"] }
       ],
@@ -17,7 +17,7 @@ export const getAllSales = async (req, res) => {
     // Transform the response to include fraction data directly
     const transformedSales = sales.map(sale => {
       const saleJson = sale.toJSON();
-      const fraction = saleJson.Item?.Fractions?.find(f => f.id === saleJson.fractionId);
+      const fraction = saleJson.Item?.Fractions?.findOne(f => f.id === saleJson.fractionId);
       if (fraction) {
         saleJson.fraction = fraction;
       }
@@ -39,8 +39,8 @@ export const getSaleById = async (req, res) => {
       },
       include: [
         { 
-          model: Item,
-          include: [{ model: Fraction }]
+           model: Item,
+          include: [{ model: Fraction, as: "fractions" }]
         }, 
         { model: User, as: "salesman", attributes: ["id", "name", "username"] }
       ],
@@ -65,58 +65,68 @@ export const getSaleById = async (req, res) => {
 
 export const createSale = async (req, res) => {
   try {
-    const { itemId, quantity, fractionId, amount, expectedAmount, status } = req.body
-    console.log("One", req.body);
-    // Check if item exists and belongs to the business
-    const item = await Item.findOne({
-      where: {
-        id: itemId,
-        businessId: req.user.businessId,
-      },
-      include: [{ model: Fraction }],
-    })
-    console.log("Two", item);
+    const { itemId, fractionId, quantity, amount } = req.body;
+    const salesmanId = req.user.id;
+
+    // Validate required fields
+    if (!itemId || !fractionId || !quantity || !amount) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Get item and fraction details
+    const item = await Item.findByPk(itemId, {
+      include: [{ model: Fraction, as: 'fractions' }]
+    });
     if (!item) {
-      return res.status(404).json({ message: "Item not found" })
+      return res.status(404).json({ message: 'Item not found' });
     }
-    console.log("Three");
+
+    const fraction = item.fractions.find(f => f.id === fractionId);
+    if (!fraction) {
+      return res.status(404).json({ message: 'Fraction not found' });
+    }
+
+    // Convert quantity to units based on fraction ratio
+    const quantityInUnits = quantity * fraction.ratio;
+
+    // // Check available quantity
+    // const availableQuantity = await getAvailableQuantity(itemId, fractionId);
+    // if (availableQuantity < quantity) {
+    //   return res.status(400).json({ 
+    //     message: `Not enough quantity available. Available: ${availableQuantity}` 
+    //   });
+    // }
     // Create sale
-    const sale = await SoldItem.create({
+    const sale = new SoldItem({
       itemId,
-      salesmanId: req.user.id,
-      quantity,
       fractionId,
+      quantity,
       amount,
-      expectedAmount,
-      status: status || "completed",
-      businessId: req.user.businessId,
-    })
-    console.log("Four");
-    // Fetch the created sale with its item and salesman
-    const createdSale = await SoldItem.findByPk(sale.id, {
-      include: [
-        { 
-          model: Item,
-          include: [{ model: Fraction }]
-        }, 
-        { model: User, as: "salesman", attributes: ["id", "name", "username"] }
-      ],
-    })
-    console.log("Five", createdSale); 
+      expectedAmount: amount,
+      salesmanId,
+      businessId: req.user.businessId
+    });
 
-    // Transform the response to include fraction data directly
-    const saleJson = createdSale.toJSON();
-    const fraction = saleJson.Item?.Fractions?.find(f => f.id === saleJson.fractionId);
-    if (fraction) {
-      saleJson.fraction = fraction;
+    await sale.save();
+
+    // Update available items
+    const availableItem = await AvailableItem.findOne({
+      itemId,
+      salesmanId,
+      businessId: req.user.businessId
+    });
+
+    if (availableItem) {
+      availableItem.quantity -= quantityInUnits;
+      await availableItem.save();
     }
 
-    res.status(201).json(saleJson)
+    res.status(201).json(sale);
   } catch (error) {
-    console.log("Six", error);
-    res.status(500).json({ message: "Error creating sale", error: error.message })
+    console.error('Error creating sale:', error);
+    res.status(500).json({ message: 'Error creating sale' });
   }
-}
+};
 
 export const updateSale = async (req, res) => {
   try {
@@ -193,8 +203,8 @@ export const getSalesByUser = async (req, res) => {
       },
       include: [
         { 
-          model: Item,
-          include: [{ model: Fraction }]
+           model: Item,
+          include: [{ model: Fraction, as: "fractions" }]
         },
         { model: User, as: "salesman", attributes: ["id", "name", "username"] }
       ],
@@ -261,5 +271,46 @@ export const getDashboardStats = async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({ message: "Error fetching dashboard stats", error: error.message })
+  }
+}
+
+export const getAvailableQuantity = async (req, res) => {
+  try {
+    const { itemId, fractionId } = req.query
+
+    if (!itemId || !fractionId) {
+      return res.status(400).json({ message: "Item ID and Fraction ID are required" })
+    }
+
+    // Get the fraction to calculate ratio
+    const fraction = await Fraction.findOne({
+      where: { id: fractionId }
+    })
+
+    if (!fraction) {
+      return res.status(404).json({ message: "Fraction not found" })
+    }
+
+    // Get available item
+    const availableItem = await AvailableItem.findOne({
+      where: {
+        itemId,
+        businessId: req.user.businessId,
+        // If user is a salesman, only show items assigned to them
+        // If user is owner or admin, show all items
+        salesmanId: req.user.role === 'salesman' ? req.user.id : null,
+      }
+    })
+
+    if (!availableItem) {
+      return res.json({ availableQuantity: 0 })
+    }
+
+    // Convert available quantity from units to the requested fraction
+    const availableQuantity = availableItem.quantity / fraction.ratio
+
+    res.json({ availableQuantity })
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching available quantity", error: error.message })
   }
 }

@@ -4,7 +4,7 @@ export const getAllItems = async (req, res) => {
   try {
     const items = await Item.findAll({
       where: { businessId: req.user.businessId },
-      include: [{ model: Category }, { model: Fraction }],
+      include: [{ model: Category }, { model: Fraction, as: "fractions" }],
     })
     res.json(items)
   } catch (error) {

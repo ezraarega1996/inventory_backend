@@ -3,6 +3,7 @@ import sequelize from "./database.js"
 import Item from "./item.js"
 import User from "./user.js"
 import Business from "./business.js"
+import Fraction from "./fraction.js"
 
 const SoldItem = sequelize.define("SoldItem", {
   id: {

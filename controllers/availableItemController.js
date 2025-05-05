@@ -1,5 +1,6 @@
-import { AvailableItem, Item, Bought, SoldItem, Fraction } from "../models/index.js"
+import { AvailableItem, Item, Bought, SoldItem, Fraction, User, ItemBought } from "../models/index.js"
 import { Op } from "sequelize"
+import sequelize from "../models/database.js"
 
 export const calculateAvailableItems = async (req, res) => {
   try {
@@ -67,8 +68,8 @@ export const calculateAvailableItems = async (req, res) => {
       where: { businessId },
       include: [
         { 
-          model: Item,
-          include: [{ model: Fraction }]
+           model: Item,
+          include: [{ model: Fraction, as: "fractions" }]
         }
       ],
     })
@@ -86,7 +87,37 @@ export const getAllAvailableItems = async (req, res) => {
       include: [
         { 
           model: Item,
-          include: [{ model: Fraction }]
+          as: 'item',
+          include: [{ model: Fraction, as: "fractions" }]
+        },
+        {
+          model: User,
+          as: 'salesman',
+          attributes: ['id', 'name', 'username']
+        },
+        {
+          model: ItemBought,
+          as: 'boughtTransactions',
+          where: { businessId: req.user.businessId },
+          required: false,
+          include: [
+            {
+              model: Fraction,
+              attributes: ['id', 'name', 'ratio']
+            }
+          ]
+        },
+        {
+          model: SoldItem,
+          as: 'soldTransactions',
+          where: { businessId: req.user.businessId },
+          required: false,
+          include: [
+            // {
+            //   model: Fraction,
+            //   attributes: ['id', 'name', 'ratio']
+            // }
+          ]
         }
       ],
       order: [["createdAt", "DESC"]],
@@ -107,7 +138,7 @@ export const getAvailableItemById = async (req, res) => {
       include: [
         { 
           model: Item,
-          include: [{ model: Fraction }]
+          include: [{ model: Fraction, as: "fractions" }]
         }
       ],
     })
@@ -120,4 +151,51 @@ export const getAvailableItemById = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Error fetching available item", error: error.message })
   }
-} 
+}
+
+export const assignToSalesman = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { salesmanId, quantity, soldPrice } = req.body;
+    const { id } = req.params;
+
+    // Find the available item
+    const availableItem = await AvailableItem.findOne({
+      where: {
+        id,
+        businessId: req.user.businessId,
+      },
+      transaction,
+    });
+
+    if (!availableItem) {
+      await transaction.rollback();
+      return res.status(404).json({ message: "Available item not found" });
+    }
+
+    if (quantity > availableItem.quantity) {
+      await transaction.rollback();
+      return res.status(400).json({ message: "Quantity cannot be greater than available quantity" });
+    }
+
+    // Create a new available item for the salesman
+    await AvailableItem.create({
+      itemId: availableItem.itemId,
+      businessId: req.user.businessId,
+      quantity,
+      soldPrice,
+      salesmanId,
+    }, { transaction });
+
+    // Update the original available item
+    await availableItem.update({
+      quantity: availableItem.quantity - quantity,
+    }, { transaction });
+
+    await transaction.commit();
+    res.json({ message: "Item assigned to salesman successfully" });
+  } catch (error) {
+    await transaction.rollback();
+    res.status(500).json({ message: "Error assigning item to salesman", error: error.message });
+  }
+}; 
