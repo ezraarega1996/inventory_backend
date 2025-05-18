@@ -111,9 +111,11 @@ export const createSale = async (req, res) => {
 
     // Update available items
     const availableItem = await AvailableItem.findOne({
+      where: {
       itemId,
       salesmanId,
       businessId: req.user.businessId
+      }
     });
 
     if (availableItem) {
