@@ -55,7 +55,7 @@ export const createItem = async (req, res) => {
       businessId: req.user.businessId,
     })
 
-    // Create fractions if provided
+    // Create fractions if providede
     if (fractions && Array.isArray(fractions)) {
       const fractionPromises = fractions.map((fraction) =>
         Fraction.create({
