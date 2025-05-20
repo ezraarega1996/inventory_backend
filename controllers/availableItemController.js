@@ -98,7 +98,10 @@ export const getAllAvailableItems = async (req, res) => {
         {
           model: ItemBought,
           as: 'boughtTransactions',
-          where: { businessId: req.user.businessId },
+          // where: { 
+          //   businessId: req.user.businessId,
+          //   itemId: sequelize.col('AvailableItem.itemId'e)
+          // },
           required: false,
           include: [
             {
@@ -110,18 +113,18 @@ export const getAllAvailableItems = async (req, res) => {
         {
           model: SoldItem,
           as: 'soldTransactions',
-          where: { businessId: req.user.businessId },
           required: false,
-          include: [
-            // {
-            //   model: Fraction,
-            //   attributes: ['id', 'name', 'ratio']
-            // }
-          ]
+          // include: [
+          //   {
+          //     model: Fraction,
+          //     attributes: ['id', 'name', 'ratio']
+          //   }
+          // ]
         }
       ],
       order: [["createdAt", "DESC"]],
     })
+
     res.json(availableItems)
   } catch (error) {
     res.status(500).json({ message: "Error fetching available items", error: error.message })

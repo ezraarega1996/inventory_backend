@@ -4,6 +4,7 @@ import Item from "./item.js"
 import Business from "./business.js"
 import User from "./user.js"
 import Fraction from "./fraction.js"
+import AvailableItem from "./availableItem.js"
 
 const ItemBought = sequelize.define("ItemBought", {
   id: {
@@ -51,6 +52,14 @@ const ItemBought = sequelize.define("ItemBought", {
       key: "id",
     },
   },
+  availableItemId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: AvailableItem,
+      key: "id",
+    },
+  },
   available_items_count: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
@@ -65,5 +74,9 @@ ItemBought.belongsTo(Item, { foreignKey: "itemId" })
 ItemBought.belongsTo(Business, { foreignKey: "businessId" })
 ItemBought.belongsTo(User, { as: 'salesman', foreignKey: "salesmanId" })
 ItemBought.belongsTo(Fraction, { foreignKey: "fractionId" })
+ItemBought.belongsTo(AvailableItem, { foreignKey: "availableItemId" })
+
+// Add the reverse association
+AvailableItem.hasMany(ItemBought, {as: "boughtTransactions", foreignKey: "availableItemId" })
 
 export default ItemBought

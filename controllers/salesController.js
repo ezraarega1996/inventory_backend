@@ -88,29 +88,27 @@ export const createSale = async (req, res) => {
     // Convert quantity to units based on fraction ratio
     const quantityInUnits = quantity * fraction.ratio;
 
-    // // Check available quantity
-    // const availableQuantity = await getAvailableQuantity(itemId, fractionId);
-    // if (availableQuantity < quantity) {
-    //   return res.status(400).json({ 
-    //     message: `Not enough quantity available. Available: ${availableQuantity}` 
-    //   });
-    // }
-
     // Update available items
     const availableItem = await AvailableItem.findOne({
       where: {
-      itemId,
-      salesmanId,
-      businessId: req.user.businessId
+        itemId,
+        salesmanId,
+        businessId: req.user.businessId
       }
     });
 
-    if (availableItem) {
-      availableItem.quantity = parseFloat(availableItem.quantity) - quantityInUnits ;
-      await availableItem.save();
+    if (!availableItem) {
+      return res.status(400).json({ message: 'No available items found for this item' });
     }
 
-        // Create sale
+    if (availableItem.quantity < quantityInUnits) {
+      return res.status(400).json({ message: 'Not enough quantity available' });
+    }
+
+    availableItem.quantity = parseFloat(availableItem.quantity) - quantityInUnits;
+    await availableItem.save();
+
+    // Create sale
     const sale = new SoldItem({
       itemId,
       fractionId,
@@ -119,14 +117,24 @@ export const createSale = async (req, res) => {
       expectedAmount: amount,
       salesmanId,
       businessId: req.user.businessId,
-      available_items_count: availableItem ? availableItem.quantity / fraction.ratio : 0,
+      available_items_count: availableItem.quantity / fraction.ratio,
+      availableItemId: availableItem.id,
     });
 
     await sale.save();
 
-    res.status(201).json(sale);
+    // Fetch the created sale with its related data
+    const createdSale = await SoldItem.findByPk(sale.id, {
+      include: [
+        { model: Item, include: [{ model: Fraction, as: 'fractions' }] },
+        { model: User, as: 'salesman', attributes: ['id', 'name', 'username'] },
+        { model: AvailableItem }
+      ]
+    });
+
+    res.status(201).json(createdSale);
   } catch (error) {
-    res.status(500).json({ message: 'Error creating sale' });
+    res.status(500).json({ message: 'Error creating sale', error: error.message });
   }
 };
 

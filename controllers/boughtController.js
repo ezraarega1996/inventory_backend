@@ -118,6 +118,7 @@ export const createBought = async (req, res) => {
       transaction
     })
 
+    let availableItem;
     if (existingAvailableItem) {
       console.log("Existing available item found:", existingAvailableItem.quantity)
       console.log("Quantity in units:", quantityInUnits)
@@ -126,9 +127,10 @@ export const createBought = async (req, res) => {
       existingAvailableItem.soldPrice = fractionSoldPrice
       console.log("Updated available item:", existingAvailableItem)
       await existingAvailableItem.save({ transaction })
+      availableItem = existingAvailableItem;
     } else {
       // Create new available item with the current quantity
-      await AvailableItem.create({
+      availableItem = await AvailableItem.create({
         itemId,
         businessId: req.user.businessId,
         quantity: quantityInUnits,
@@ -137,7 +139,7 @@ export const createBought = async (req, res) => {
       }, { transaction })
     }
 
-        // Create bought item
+    // Create bought item
     const bought = await ItemBought.create({
       itemId,
       fractionId,
@@ -147,15 +149,17 @@ export const createBought = async (req, res) => {
       location,
       expiryDate: expiryDate || null,
       businessId: req.user.businessId,
-      available_items_count : existingAvailableItem.quantity / fraction.ratio,
+      available_items_count: availableItem.quantity / fraction.ratio,
       salesmanId,
+      availableItemId: availableItem.id,
     }, { transaction })
 
     // Fetch the created bought item with its item
     const createdBought = await ItemBought.findByPk(bought.id, {
       include: [
         { model: Item },
-        { model: User, as: 'salesman', attributes: ['id', 'name', 'username'] }
+        { model: User, as: 'salesman', attributes: ['id', 'name', 'username'] },
+        { model: AvailableItem }
       ],
       transaction
     })
