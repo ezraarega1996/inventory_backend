@@ -1,5 +1,6 @@
 import { ItemBought, Item, Fraction, AvailableItem, SoldItem, User } from "../models/index.js"
 import sequelize from "../models/database.js"
+import { parse } from "dotenv"
 
 export const getAllBoughts = async (req, res) => {
   try {
@@ -107,19 +108,6 @@ export const createBought = async (req, res) => {
     // Convert quantity to units based on fraction ratio
     const quantityInUnits = quantity * fraction.ratio
 
-    // Create bought item
-    const bought = await ItemBought.create({
-      itemId,
-      fractionId,
-      fractionPurchasePrice,
-      fractionSoldPrice,
-      quantity,
-      location,
-      expiryDate: expiryDate || null,
-      businessId: req.user.businessId,
-      salesmanId,
-    }, { transaction })
-
     // Find existing available item
     const existingAvailableItem = await AvailableItem.findOne({
       where: {
@@ -131,9 +119,12 @@ export const createBought = async (req, res) => {
     })
 
     if (existingAvailableItem) {
+      console.log("Existing available item found:", existingAvailableItem.quantity)
+      console.log("Quantity in units:", quantityInUnits)
       // Update existing available item by adding the new quantity
-      existingAvailableItem.quantity += quantityInUnits
+      existingAvailableItem.quantity = quantityInUnits + parseFloat(existingAvailableItem.quantity)
       existingAvailableItem.soldPrice = fractionSoldPrice
+      console.log("Updated available item:", existingAvailableItem)
       await existingAvailableItem.save({ transaction })
     } else {
       // Create new available item with the current quantity
@@ -145,6 +136,20 @@ export const createBought = async (req, res) => {
         salesmanId,
       }, { transaction })
     }
+
+        // Create bought item
+    const bought = await ItemBought.create({
+      itemId,
+      fractionId,
+      fractionPurchasePrice,
+      fractionSoldPrice,
+      quantity,
+      location,
+      expiryDate: expiryDate || null,
+      businessId: req.user.businessId,
+      available_items_count : existingAvailableItem.quantity / fraction.ratio,
+      salesmanId,
+    }, { transaction })
 
     // Fetch the created bought item with its item
     const createdBought = await ItemBought.findByPk(bought.id, {

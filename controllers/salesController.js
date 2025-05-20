@@ -95,19 +95,6 @@ export const createSale = async (req, res) => {
     //     message: `Not enough quantity available. Available: ${availableQuantity}` 
     //   });
     // }
-    // Create sale
-    const sale = new SoldItem({
-      itemId,
-      fractionId,
-      quantity,
-      amount,
-      expectedAmount: amount,
-      salesmanId,
-      businessId: req.user.businessId
-    });
-
-
-    await sale.save();
 
     // Update available items
     const availableItem = await AvailableItem.findOne({
@@ -119,9 +106,24 @@ export const createSale = async (req, res) => {
     });
 
     if (availableItem) {
-      availableItem.quantity -= quantityInUnits;
+      availableItem.quantity = parseFloat(availableItem.quantity) - quantityInUnits ;
       await availableItem.save();
     }
+
+        // Create sale
+    const sale = new SoldItem({
+      itemId,
+      fractionId,
+      quantity,
+      amount,
+      expectedAmount: amount,
+      salesmanId,
+      businessId: req.user.businessId,
+      available_items_count: availableItem ? availableItem.quantity / fraction.ratio : 0,
+    });
+
+    await sale.save();
+
     res.status(201).json(sale);
   } catch (error) {
     res.status(500).json({ message: 'Error creating sale' });

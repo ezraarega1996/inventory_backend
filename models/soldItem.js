@@ -43,6 +43,10 @@ const SoldItem = sequelize.define("SoldItem", {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+  available_items_count: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+  },
 })
 
 SoldItem.belongsTo(Item, { foreignKey: "itemId" })

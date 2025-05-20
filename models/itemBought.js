@@ -51,6 +51,10 @@ const ItemBought = sequelize.define("ItemBought", {
       key: "id",
     },
   },
+  available_items_count: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: false,
+  },
   createdTime: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
