@@ -1,4 +1,5 @@
 import { SoldItem, Item, User, Fraction, AvailableItem, sequelize } from "../models/index.js"
+import { Op } from "sequelize"
 
 export const getAllSales = async (req, res) => {
   try {
@@ -228,15 +229,33 @@ export const getSalesByUser = async (req, res) => {
 
 export const getDashboardStats = async (req, res) => {
   try {
+    console.log("getDashboardStats called");
     // Get total sales amount for this business
     const totalSales = await SoldItem.sum("amount", {
       where: { businessId: req.user.businessId },
     })
 
+    // Get today's sales amount for this business
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const todaySales = await SoldItem.sum("amount", {
+      where: {
+      businessId: req.user.businessId,
+      soldTime: {
+        [Op.gte]: startOfToday,
+      },
+      },
+    });
+    console.log("Today's Sales: ", todaySales);
+
+    console.log("Dashboard Stats: ", totalSales);
+
     // Get sales count for this business
     const salesCount = await SoldItem.count({
       where: { businessId: req.user.businessId },
     })
+    console.log("Sales Count: ", salesCount);
 
     // Get sales by day for the last 30 days for this business
     const salesByDay = await SoldItem.findAll({
@@ -247,12 +266,13 @@ export const getDashboardStats = async (req, res) => {
       where: {
         businessId: req.user.businessId,
         soldTime: {
-          [sequelize.Op.gte]: new Date(new Date() - 30 * 24 * 60 * 60 * 1000),
+          [Op.gte]: new Date(new Date() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
         },
       },
       group: [sequelize.fn("date", sequelize.col("soldTime"))],
       order: [[sequelize.fn("date", sequelize.col("soldTime")), "ASC"]],
     })
+
 
     // Get top selling items for this business
     const topItems = await SoldItem.findAll({
@@ -272,14 +292,16 @@ export const getDashboardStats = async (req, res) => {
       order: [[sequelize.fn("sum", sequelize.col("amount")), "DESC"]],
       limit: 5,
     })
-
+    console.log("Top Items: ", topItems);
     res.json({
       totalSales,
       salesCount,
       salesByDay,
       topItems,
+      todaySales,
     })
   } catch (error) {
+    console.error("Error fetching dashboard stats: ", error);
     res.status(500).json({ message: "Error fetching dashboard stats", error: error.message })
   }
 }
