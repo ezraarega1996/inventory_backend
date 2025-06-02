@@ -69,11 +69,12 @@ export const createItem = async (req, res) => {
 
     // Fetch the created item with its fractions
     const createdItem = await Item.findByPk(item.id, {
-      include: [{ model: Category }, { model: Fraction }],
+      include: [{ model: Category }, { model: Fraction, as: "fractions" }],
     })
 
     res.status(201).json(createdItem)
   } catch (error) {
+    console.log("Error creating item: ", error);
     res.status(500).json({ message: "Error creating item", error: error.message })
   }
 }
