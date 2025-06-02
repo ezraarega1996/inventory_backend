@@ -229,7 +229,6 @@ export const getSalesByUser = async (req, res) => {
 
 export const getDashboardStats = async (req, res) => {
   try {
-    console.log("getDashboardStats called");
     // Get total sales amount for this business
     const totalSales = await SoldItem.sum("amount", {
       where: { businessId: req.user.businessId },
@@ -247,15 +246,10 @@ export const getDashboardStats = async (req, res) => {
       },
       },
     });
-    console.log("Today's Sales: ", todaySales);
-
-    console.log("Dashboard Stats: ", totalSales);
-
     // Get sales count for this business
     const salesCount = await SoldItem.count({
       where: { businessId: req.user.businessId },
     })
-    console.log("Sales Count: ", salesCount);
 
     // Get sales by day for the last 30 days for this business
     const salesByDay = await SoldItem.findAll({
@@ -292,7 +286,6 @@ export const getDashboardStats = async (req, res) => {
       order: [[sequelize.fn("sum", sequelize.col("amount")), "DESC"]],
       limit: 5,
     })
-    console.log("Top Items: ", topItems);
     res.json({
       totalSales,
       salesCount,

@@ -1,28 +1,20 @@
 import { Business, User, Subscription, Item, SoldItem } from "../models/index.js"
-import { sequelize } from "../models/index.js"
+import sequelize from "../models/database.js"
 import { Op } from "sequelize"
 
 
 // Create a new business
 export const createBusiness = async (req, res) => {
-  console.log("createBusiness")
-  const bought = await sequelize.bought()
-  console.log("one")
   try {
     const { name, address, phone, email, ownerName, ownerEmail, ownerPhone, ownerUsername, ownerPassword } = req.body
-    console.log("two", req.body)
     // Check if business with this email already exists
     const existingBusiness = await Business.findOne({
       where: { email },
-      bought,
     })
-    console.log("three", existingBusiness)
 
     if (existingBusiness) {
-      await bought.rollback()
       return res.status(400).json({ message: "Business with this email already exists" })
     }
-    console.log("four")
     
     // Create business
     const business = await Business.create(
@@ -35,9 +27,7 @@ export const createBusiness = async (req, res) => {
         subscriptionPlan: "free",
         trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
       },
-      { bought },
     )
-    console.log("seven", business)
 
     // Only create owner user if all owner fields are provided
     if (ownerName && ownerEmail && ownerPhone && ownerUsername && ownerPassword) {
@@ -46,14 +36,10 @@ export const createBusiness = async (req, res) => {
         where: {
           [Op.or]: [{ email: ownerEmail }, { username: ownerUsername }],
         },
-        bought,
       })
-      console.log("five", existingUser)
       if (existingUser) {
-        await bought.rollback()
         return res.status(400).json({ message: "User with this email or username already exists" })
       }
-      console.log("six")
 
       // Create owner user
       const owner = await User.create(
@@ -67,10 +53,7 @@ export const createBusiness = async (req, res) => {
           role: "owner",
           businessId: business.id,
         },
-        { bought },
-      )
-      console.log("eight", owner)
-    }
+      )    
 
     // Create initial subscription
     await Subscription.create(
@@ -82,10 +65,6 @@ export const createBusiness = async (req, res) => {
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
         amount: 0,
       },
-      { bought },
-    )
-
-    await bought.commit()
 
     res.status(201).json({
       message: "Business created successfully",
@@ -99,9 +78,8 @@ export const createBusiness = async (req, res) => {
         name: owner.name,
         email: owner.email,
       },
-    })
+    }))}
   } catch (error) {
-    await bought.rollback()
     res.status(500).json({ message: "Error creating business", error: error.message })
   }
 }
