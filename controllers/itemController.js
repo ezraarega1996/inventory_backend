@@ -19,7 +19,7 @@ export const getItemById = async (req, res) => {
         id: req.params.id,
         businessId: req.user.businessId,
       },
-      include: [{ model: Category }, { model: Fraction }],
+      include: [{ model: Category }, { model: Fraction, as: "fractions" }],
     })
 
     if (!item) {
@@ -114,7 +114,7 @@ export const updateItem = async (req, res) => {
 
     // Fetch the updated item with its fractions
     const updatedItem = await Item.findByPk(item.id, {
-      include: [{ model: Category }, { model: Fraction }],
+      include: [{ model: Category }, { model: Fraction, as: "fractions" }],
     })
 
     res.json(updatedItem)
