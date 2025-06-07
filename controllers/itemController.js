@@ -74,7 +74,6 @@ export const createItem = async (req, res) => {
 
     res.status(201).json(createdItem)
   } catch (error) {
-    console.log("Error creating item: ", error);
     res.status(500).json({ message: "Error creating item", error: error.message })
   }
 }

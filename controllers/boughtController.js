@@ -120,12 +120,9 @@ export const createBought = async (req, res) => {
 
     let availableItem;
     if (existingAvailableItem) {
-      console.log("Existing available item found:", existingAvailableItem.quantity)
-      console.log("Quantity in units:", quantityInUnits)
       // Update existing available item by adding the new quantity
       existingAvailableItem.quantity = quantityInUnits + parseFloat(existingAvailableItem.quantity)
       existingAvailableItem.soldPrice = fractionSoldPrice
-      console.log("Updated available item:", existingAvailableItem)
       await existingAvailableItem.save({ transaction })
       availableItem = existingAvailableItem;
     } else {

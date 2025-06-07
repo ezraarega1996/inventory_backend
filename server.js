@@ -12,6 +12,7 @@ import businessRoutes from "./routes/businessRoutes.js"
 import paymentRoutes from "./routes/paymentRoutes.js"
 import boughtRoutes from "./routes/boughtRoutes.js"
 import availableItemRoutes from "./routes/availableItemRoutes.js"
+import { connectWithRetry } from "./models/database.js"
 
 
 dotenv.config()
@@ -39,19 +40,11 @@ app.use("/api/boughts", boughtRoutes)
 app.use("/api/available-items", availableItemRoutes)
 
 // Test database connection
-sequelize
-  .authenticate()
-  .then(() => {
-    console.log("Database connection established successfully.")
-    return syncDatabase()
-  })
-  .catch((err) => {
-    console.error("Unable to connect to the database:", err)
-  })
+connectWithRetry().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server listening on port ${PORT}`);
+  });
+});
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
 
 export default app
