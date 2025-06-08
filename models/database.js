@@ -16,7 +16,7 @@ const connectWithRetry = async (retries = 10, delay = 5000) => {
     try {
       await sequelize.authenticate();
       console.log('✅ Connected to DB');
-      return;
+      return syncDatabase()
     } catch (err) {
       console.error(`❌ DB connection failed. Retries left: ${retries - 1}`);
       console.error(err.message);
