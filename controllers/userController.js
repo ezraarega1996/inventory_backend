@@ -5,6 +5,7 @@ import { Op } from "sequelize"
 
 
 export const getAllUsers = async (req, res) => {
+  console.log("getAllUsers called with user: ", req.user)
   try {
     // For admin, return all users
     if (req.user.role === "admin") {

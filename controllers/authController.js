@@ -51,6 +51,7 @@ export const register = async (req, res) => {
       },
     })
   } catch (error) {
+    console.error("Error registering user:", error)
     res.status(500).json({ message: "Error registering user", error: error.message })
   }
 }
@@ -121,6 +122,7 @@ export const login = async (req, res) => {
       },
     })
   } catch (error) {
+    console.error("Error logging in:", error)
     res.status(500).json({ message: "Error logging in", error: error.message })
   }
 }
