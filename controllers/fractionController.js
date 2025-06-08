@@ -9,6 +9,7 @@ export const getAllFractions = async (req, res) => {
     })
     res.json(fractions)
   } catch (error) {
+    console.log("errr in listing fractions: ", error)
     res.status(500).json({ message: "Error fetching fractions", error: error.message })
   }
 }

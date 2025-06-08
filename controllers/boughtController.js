@@ -21,6 +21,7 @@ export const getAllBoughts = async (req, res) => {
     })
     res.json(boughts)
   } catch (error) {
+    console.log("errr in listing boughts: ", error)
     res.status(500).json({ message: "Error fetching bought items", error: error.message })
   }
 }

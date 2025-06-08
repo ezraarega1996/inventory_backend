@@ -27,6 +27,7 @@ export const getAllSales = async (req, res) => {
 
     res.json(transformedSales)
   } catch (error) {
+    console.log("errr in listing sales: ", error)
     res.status(500).json({ message: "Error fetching sales", error: error.message })
   }
 }

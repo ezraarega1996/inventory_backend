@@ -8,6 +8,7 @@ export const getAllItems = async (req, res) => {
     })
     res.json(items)
   } catch (error) {
+    console.log("errr in listing items: ", error)
     res.status(500).json({ message: "Error fetching items", error: error.message })
   }
 }

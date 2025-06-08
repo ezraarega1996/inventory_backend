@@ -107,6 +107,7 @@ export const getAllBusinesses = async (req, res) => {
 
     res.json(businesses)
   } catch (error) {
+    console.log("errr in listing businesses: ", error)
     res.status(500).json({ message: "Error fetching businesses", error: error.message })
   }
 }
