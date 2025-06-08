@@ -5,7 +5,7 @@ import { Op } from "sequelize"
 
 
 export const getAllUsers = async (req, res) => {
-  console.log("getAllUsers called with user: ", req.user)
+  console.log("getAllUsers called with user: ")
   try {
     // For admin, return all users
     if (req.user.role === "admin") {
@@ -23,6 +23,7 @@ export const getAllUsers = async (req, res) => {
       },
       attributes: { exclude: ["password"] },
     })
+    console.log("getAllUsers ended with user: ")
     res.json(users)
   } catch (error) {
     console.log("errr in listing users: ", error)
