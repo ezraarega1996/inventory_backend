@@ -29,5 +29,15 @@ const connectWithRetry = async (retries = 10, delay = 5000) => {
   process.exit(1);
 };
 
-export {connectWithRetry };
+const syncDatabase = async () => {
+  try {
+    await sequelize.sync();
+    console.log('✅ Database synchronized');
+  } catch (error) {
+    console.error('❌ Database synchronization failed:', error.message);
+    throw error;
+  }
+};
+
+export { connectWithRetry, syncDatabase };
 export default sequelize;
