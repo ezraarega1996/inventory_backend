@@ -201,4 +201,55 @@ export const assignToSalesman = async (req, res) => {
     await transaction.rollback();
     res.status(500).json({ message: "Error assigning item to salesman", error: error.message });
   }
+};
+
+export const getTodaySalesBySalesman = async (req, res) => {
+  try {
+    const { businessId } = req.user;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const salesBySalesman = await SoldItem.findAll({
+      where: {
+        businessId,
+        createdAt: {
+          [Op.gte]: today
+        }
+      },
+      include: [
+        {
+          model: User,
+          as: 'salesman',
+          attributes: ['id', 'name', 'username']
+        }
+      ],
+      attributes: [
+        'salesmanId',
+        [sequelize.fn('SUM', sequelize.col('amount')), 'totalAmount'],
+        [sequelize.fn('COUNT', sequelize.col('SoldItem.id')), 'totalTransactions']
+      ],
+      group: ['salesmanId', 'salesman.id', 'salesman.name', 'salesman.username'],
+    });
+
+    // Calculate total sales for all salesmen
+    const totalSales = salesBySalesman.reduce((sum, sale) => {
+      return sum + parseFloat(sale.getDataValue('totalAmount') || 0);
+    }, 0);
+
+    // Format the response
+    const formattedSales = salesBySalesman.map(sale => ({
+      salesmanId: sale.getDataValue('salesmanId'),
+      salesmanName: sale.salesman.name,
+      totalAmount: parseFloat(sale.getDataValue('totalAmount') || 0),
+      totalTransactions: parseInt(sale.getDataValue('totalTransactions') || 0)
+    }));
+
+    res.json({
+      totalSales,
+      salesBySalesman: formattedSales
+    });
+  } catch (error) {
+    console.error("Error fetching today's sales by salesman:", error);
+    res.status(500).json({ message: "Error fetching today's sales", error: error.message });
+  }
 }; 
