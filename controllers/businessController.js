@@ -6,48 +6,34 @@ import { Op } from "sequelize"
 // Create a new business
 export const createBusiness = async (req, res) => {
   try {
-    const { name, address, phone, email, ownerName, ownerEmail, ownerPhone, ownerUsername, ownerPassword } = req.body
-    // Check if business with this email already exists
-    const existingBusiness = await Business.findOne({
-      where: { email },
-    })
-
-    if (existingBusiness) {
-      return res.status(400).json({ message: "Business with this email already exists" })
-    }
+    const { name, ownerName, ownerPhone, ownerUsername, ownerPassword } = req.body
     
-    // Create business
+    // Create business with minimal information
     const business = await Business.create(
       {
         name,
-        address,
-        phone,
-        email,
         subscriptionStatus: "trial",
         subscriptionPlan: "free",
         trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
       },
     )
 
-    // Only create owner user if all owner fields are provided
-    if (ownerName && ownerEmail && ownerPhone && ownerUsername && ownerPassword) {
-      // Check if user with this email or username already exists
+    // Create owner user
+    if (ownerName && ownerPhone && ownerUsername && ownerPassword) {
+      // Check if user with this username already exists
       const existingUser = await User.findOne({
-        where: {
-          [Op.or]: [{ email: ownerEmail }, { username: ownerUsername }],
-        },
+        where: { username: ownerUsername },
       })
       if (existingUser) {
-        return res.status(400).json({ message: "User with this email or username already exists" })
+        return res.status(400).json({ message: "User with this username already exists" })
       }
 
       // Create owner user
       const owner = await User.create(
         {
           name: ownerName,
-          email: ownerEmail,
           phone: ownerPhone,
-          location: address || "Not specified",
+          location: "Not specified",
           username: ownerUsername,
           password: ownerPassword,
           role: "owner",
@@ -55,30 +41,32 @@ export const createBusiness = async (req, res) => {
         },
       )    
 
-    // Create initial subscription
-    await Subscription.create(
-      {
-        businessId: business.id,
-        plan: "free",
-        status: "active",
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
-        amount: 0,
-      },
+      // Create initial subscription
+      await Subscription.create(
+        {
+          businessId: business.id,
+          plan: "free",
+          status: "active",
+          startDate: new Date(),
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
+          amount: 0,
+        },
+      )
 
-    res.status(201).json({
-      message: "Business created successfully",
-      business: {
-        id: business.id,
-        name: business.name,
-        email: business.email,
-      },
-      owner: {
-        id: owner.id,
-        name: owner.name,
-        email: owner.email,
-      },
-    }))}
+      res.status(201).json({
+        message: "Business created successfully",
+        business: {
+          id: business.id,
+          name: business.name,
+        },
+        owner: {
+          id: owner.id,
+          name: owner.name,
+        },
+      })
+    } else {
+      res.status(400).json({ message: "Owner information is required" })
+    }
   } catch (error) {
     res.status(500).json({ message: "Error creating business", error: error.message })
   }
@@ -265,19 +253,22 @@ export const getBusinessStats = async (req, res) => {
     })
 
     // Get sales by month for the last 12 months
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
     const salesByMonth = await SoldItem.findAll({
       where: {
         businessId,
         soldTime: {
-          [sequelize.Op.gte]: new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
+          [Op.gte]: oneYearAgo,
         },
       },
       attributes: [
-        [sequelize.fn("date_trunc", "month", sequelize.col("soldTime")), "month"],
+        [sequelize.fn("to_char", sequelize.col("soldTime"), "YYYY-MM"), "month"],
         [sequelize.fn("sum", sequelize.col("amount")), "total"],
       ],
-      group: [sequelize.fn("date_trunc", "month", sequelize.col("soldTime"))],
-      order: [[sequelize.fn("date_trunc", "month", sequelize.col("soldTime")), "ASC"]],
+      group: [sequelize.fn("to_char", sequelize.col("soldTime"), "YYYY-MM")],
+      order: [[sequelize.fn("to_char", sequelize.col("soldTime"), "YYYY-MM"), "ASC"]],
     })
 
     res.json({
@@ -285,9 +276,13 @@ export const getBusinessStats = async (req, res) => {
       itemCount,
       totalSales: salesData[0]?.dataValues.totalSales || 0,
       salesCount: salesData[0]?.dataValues.salesCount || 0,
-      salesByMonth,
+      salesByMonth: salesByMonth.map(item => ({
+        month: item.getDataValue('month'),
+        total: parseFloat(item.getDataValue('total')) || 0
+      })),
     })
   } catch (error) {
+    console.error("Error fetching business stats:", error);
     res.status(500).json({ message: "Error fetching business stats", error: error.message })
   }
 }
