@@ -58,7 +58,7 @@ export const getUserById = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    const { name, phone, location, username, password, email, role } = req.body
+    const { name, phone, location, username, password, email, role, shopId } = req.body
 
     // Only admin or owner can create users
     if (req.user.role !== "admin" && req.user.role !== "owner") {
@@ -110,6 +110,7 @@ export const createUser = async (req, res) => {
       email,
       role: role || "salesman",
       businessId,
+      shopId,
     })
 
     res.status(201).json({
@@ -121,6 +122,7 @@ export const createUser = async (req, res) => {
       email: user.email,
       role: user.role,
       businessId: user.businessId,
+      shopId: user.shopId,
     })
   } catch (error) {
     res.status(500).json({ message: "Error creating user", error: error.message })
@@ -129,7 +131,7 @@ export const createUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   try {
-    const { name, phone, location, password, email } = req.body
+    const { name, phone, location, password, email, shopId } = req.body
 
     const user = await User.findByPk(req.params.id)
 
@@ -152,6 +154,7 @@ export const updateUser = async (req, res) => {
     if (location) user.location = location
     if (password) user.password = password
     if (email) user.email = email
+    if (shopId !== undefined) user.shopId = shopId
 
     await user.save()
 
@@ -164,6 +167,7 @@ export const updateUser = async (req, res) => {
       email: user.email,
       role: user.role,
       businessId: user.businessId,
+      shopId: user.shopId,
     })
   } catch (error) {
     res.status(500).json({ message: "Error updating user", error: error.message })
