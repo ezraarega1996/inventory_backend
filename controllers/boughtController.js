@@ -106,6 +106,23 @@ export const createBought = async (req, res) => {
       return res.status(404).json({ message: "Fraction not found" })
     }
 
+    // Get salesperson's shop assignment if salesmanId is provided
+    let shopId = null
+    if (salesmanId) {
+      const salesperson = await User.findOne({
+        where: {
+          id: salesmanId,
+          businessId: req.user.businessId,
+          role: "salesman",
+        },
+        transaction
+      })
+      
+      if (salesperson) {
+        shopId = salesperson.shopId
+      }
+    }
+
     // Convert quantity to units based on fraction ratio
     const quantityInUnits = quantity * fraction.ratio
 
@@ -147,6 +164,7 @@ export const createBought = async (req, res) => {
       location,
       expiryDate: expiryDate || null,
       businessId: req.user.businessId,
+      shopId,
       available_items_count: availableItem.quantity / fraction.ratio,
       salesmanId,
       availableItemId: availableItem.id,

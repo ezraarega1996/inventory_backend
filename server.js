@@ -12,6 +12,7 @@ import businessRoutes from "./routes/businessRoutes.js"
 import paymentRoutes from "./routes/paymentRoutes.js"
 import boughtRoutes from "./routes/boughtRoutes.js"
 import availableItemRoutes from "./routes/availableItemRoutes.js"
+import shopRoutes from "./routes/shopRoutes.js"
 import { connectWithRetry } from "./models/database.js"
 
 
@@ -38,6 +39,7 @@ app.use("/api/businesses", businessRoutes)
 app.use("/api/payments", paymentRoutes)
 app.use("/api/boughts", boughtRoutes)
 app.use("/api/available-items", availableItemRoutes)
+app.use("/api/shops", shopRoutes)
 
 // Test database connection
 connectWithRetry().then(() => {

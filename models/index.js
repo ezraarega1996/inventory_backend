@@ -9,6 +9,13 @@ import Business from "./business.js"
 import Subscription from "./subscription.js"
 import AvailableItem from "./availableItem.js"
 import Bought from "./itemBought.js"
+import Shop from "./shop.js"
+
+// Define associations after all models are loaded to avoid circular dependencies
+Shop.hasMany(User, { foreignKey: "shopId", as: "salespeople" })
+User.belongsTo(Shop, { foreignKey: "shopId" })
+
+ItemBought.belongsTo(Shop, { foreignKey: "shopId" })
 
 const syncDatabase = async () => {
   try {
@@ -19,4 +26,4 @@ const syncDatabase = async () => {
   }
 }
 
-export { sequelize, User, Category, Item, Fraction, ItemBought, SoldItem, Business, Subscription, AvailableItem, Bought, syncDatabase }
+export { sequelize, User, Category, Item, Fraction, ItemBought, SoldItem, Business, Subscription, AvailableItem, Bought, Shop, syncDatabase }

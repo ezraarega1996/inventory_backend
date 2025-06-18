@@ -45,6 +45,18 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: "salesman",
     },
+    businessId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: Business,
+        key: "id",
+      },
+    },
+    shopId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

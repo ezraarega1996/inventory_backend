@@ -44,6 +44,10 @@ const ItemBought = sequelize.define("ItemBought", {
     type: DataTypes.UUID,
     allowNull: false,
   },
+  shopId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
   salesmanId: {
     type: DataTypes.UUID,
     allowNull: true,
