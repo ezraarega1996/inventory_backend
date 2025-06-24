@@ -69,6 +69,7 @@ export const createSale = async (req, res) => {
   try {
     const { itemId, fractionId, quantity, amount } = req.body;
     const salesmanId = req.user.id;
+    const shopId = req.user.shopId;
 
     // Validate required fields
     if (!itemId || !fractionId || !quantity || !amount) {
@@ -94,7 +95,7 @@ export const createSale = async (req, res) => {
     const availableItem = await AvailableItem.findOne({
       where: {
         itemId,
-        salesmanId,
+        shopId,
         businessId: req.user.businessId
       }
     });

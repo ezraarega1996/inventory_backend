@@ -58,7 +58,7 @@ export const getUserById = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    const { name, phone, location, username, password, email, role, shopId } = req.body
+    const { name, phone, location, username, password, role, shopId } = req.body
 
     // Only admin or owner can create users
     if (req.user.role !== "admin" && req.user.role !== "owner") {
@@ -89,12 +89,12 @@ export const createUser = async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({
       where: {
-        [Op.or]: [{ username }, { email }],
+        [Op.or]: [{ username }],
       },
     })
 
     if (existingUser) {
-      return res.status(400).json({ message: "Username or email already exists" })
+      return res.status(400).json({ message: "Username already exists" })
     }
 
     // Set businessId based on who is creating the user
@@ -107,7 +107,6 @@ export const createUser = async (req, res) => {
       location,
       username,
       password,
-      email,
       role: role || "salesman",
       businessId,
       shopId,
@@ -119,7 +118,6 @@ export const createUser = async (req, res) => {
       phone: user.phone,
       location: user.location,
       username: user.username,
-      email: user.email,
       role: user.role,
       businessId: user.businessId,
       shopId: user.shopId,
@@ -131,7 +129,7 @@ export const createUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   try {
-    const { name, phone, location, password, email, shopId } = req.body
+    const { name, phone, location, password, shopId } = req.body
 
     const user = await User.findByPk(req.params.id)
 
@@ -153,7 +151,6 @@ export const updateUser = async (req, res) => {
     if (phone) user.phone = phone
     if (location) user.location = location
     if (password) user.password = password
-    if (email) user.email = email
     if (shopId !== undefined) user.shopId = shopId
 
     await user.save()
@@ -164,7 +161,6 @@ export const updateUser = async (req, res) => {
       phone: user.phone,
       location: user.location,
       username: user.username,
-      email: user.email,
       role: user.role,
       businessId: user.businessId,
       shopId: user.shopId,

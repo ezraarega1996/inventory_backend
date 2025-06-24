@@ -57,8 +57,14 @@ export const register = async (req, res) => {
 }
 
 export const login = async (req, res) => {
+  console.log("Login request received");
+  console.log("Request body:", req.body);
+  console.log("Request headers:", req.headers);
+  
   try {
     const { username, password } = req.body
+
+    console.log("Login attempt for username:", username);
 
     // Find user by username
     const user = await User.findOne({
@@ -66,12 +72,16 @@ export const login = async (req, res) => {
       include: [{ model: Business }],
     })
 
+    console.log("User found:", user ? "Yes" : "No");
+
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" })
     }
 
     // Validate password
     const isPasswordValid = await user.validatePassword(password)
+
+    console.log("Password validation:", isPasswordValid ? "Valid" : "Invalid");
 
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid credentials" })
@@ -101,6 +111,8 @@ export const login = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" })
 
+    console.log("JWT token generated successfully");
+
     res.json({
       message: "Login successful",
       token,
@@ -121,6 +133,8 @@ export const login = async (req, res) => {
           : null,
       },
     })
+    
+    console.log("Login response sent successfully");
   } catch (error) {
     console.error("Error logging in:", error)
     res.status(500).json({ message: "Error logging in", error: error.message })

@@ -18,6 +18,17 @@ import { connectWithRetry } from "./models/database.js"
 
 dotenv.config()
 
+// Set default environment variables for development
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'your-super-secret-jwt-key-change-this-in-production';
+  console.log('⚠️  JWT_SECRET not set, using default for development');
+}
+
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'postgres://postgres:root@localhost:5432/inventory_db';
+  console.log('⚠️  DATABASE_URL not set, using default for development');
+}
+
 const app = express()
 const PORT = process.env.PORT || 5000
 
