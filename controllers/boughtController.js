@@ -1,4 +1,4 @@
-import { ItemBought, Item, Fraction, AvailableItem, SoldItem, User } from "../models/index.js"
+import { ItemBought, Item, Fraction, AvailableItem, SoldItem, Shop } from "../models/index.js"
 import sequelize from "../models/database.js"
 import { parse } from "dotenv"
 
@@ -12,9 +12,8 @@ export const getAllBoughts = async (req, res) => {
           include: [{ model: Fraction, as: "fractions" }]
         },
         {
-          model: User,
-          as: 'salesman',
-          attributes: ['id', 'name', 'username']
+          model: Shop,
+          attributes: ['id', 'name', 'address']
         },
       ],
       order: [["createdTime", "DESC"]],
@@ -37,7 +36,11 @@ export const getBoughtById = async (req, res) => {
         { 
            model: Item,
           include: [{ model: Fraction, as: "fractions" }]
-        }
+        },
+        {
+          model: Shop,
+          attributes: ['id', 'name', 'address']
+        },
       ],
     })
 
@@ -79,9 +82,16 @@ async function convertToUnitQuantity(itemId, fractionId, quantity) {
 }
 
 export const createBought = async (req, res) => {
+  console.log("createBought started")
+  console.log("Request body:", req.body)
+  console.log("Request user:", req.user)
+  console.log("Request headers:", req.headers)
+  
   const transaction = await sequelize.transaction()
   try {
-    const { itemId, fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate, salesmanId } = req.body
+    const { itemId, fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate, shopId } = req.body
+
+    console.log("Extracted data:", { itemId, fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate, shopId })
 
     // Check if item exists and belongs to the business
     const item = await Item.findOne({
@@ -91,15 +101,34 @@ export const createBought = async (req, res) => {
       },
     })
 
+    console.log("Found item:", item)
+
     if (!item) {
       await transaction.rollback()
       return res.status(404).json({ message: "Item not found" })
+    }
+
+    // Check if shop exists and belongs to the business
+    const shop = await Shop.findOne({
+      where: {
+        id: shopId,
+        businessId: req.user.businessId,
+      },
+    })
+
+    console.log("Found shop:", shop)
+
+    if (!shop) {
+      await transaction.rollback()
+      return res.status(404).json({ message: "Shop not found" })
     }
 
     // Get the fraction being used
     const fraction = await Fraction.findOne({
       where: { id: fractionId }
     })
+
+    console.log("Found fraction:", fraction)
 
     if (!fraction) {
       await transaction.rollback()
@@ -109,12 +138,12 @@ export const createBought = async (req, res) => {
     // Convert quantity to units based on fraction ratio
     const quantityInUnits = quantity * fraction.ratio
 
-    // Find existing available item
+    // Find existing available item for this shop
     const existingAvailableItem = await AvailableItem.findOne({
       where: {
         itemId,
         businessId: req.user.businessId,
-        salesmanId: salesmanId || null,
+        shopId: shopId,
       },
       transaction
     })
@@ -133,7 +162,7 @@ export const createBought = async (req, res) => {
         businessId: req.user.businessId,
         quantity: quantityInUnits,
         soldPrice: fractionSoldPrice,
-        salesmanId,
+        shopId,
       }, { transaction })
     }
 
@@ -147,24 +176,26 @@ export const createBought = async (req, res) => {
       location,
       expiryDate: expiryDate || null,
       businessId: req.user.businessId,
+      shopId,
       available_items_count: availableItem.quantity / fraction.ratio,
-      salesmanId,
       availableItemId: availableItem.id,
     }, { transaction })
 
-    // Fetch the created bought item with its item
+    // Fetch the created bought item with its item and shop
     const createdBought = await ItemBought.findByPk(bought.id, {
       include: [
         { model: Item },
-        { model: User, as: 'salesman', attributes: ['id', 'name', 'username'] },
+        { model: Shop, attributes: ['id', 'name', 'address'] },
         { model: AvailableItem }
       ],
       transaction
     })
 
     await transaction.commit()
+    console.log("saved data.");
     res.status(201).json(createdBought)
   } catch (error) {
+    console.log("error while creating boughtItems: ", error);
     await transaction.rollback()
     res.status(500).json({ message: "Error creating bought item", error: error.message })
   }
@@ -173,8 +204,8 @@ export const createBought = async (req, res) => {
 export const updateBought = async (req, res) => {
   const transaction = await sequelize.transaction()
   try {
-    const { fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate, salesmanId } = req.body
-
+    const { fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate, shopId } = req.body
+    console.log("one");
     const bought = await ItemBought.findOne({
       where: {
         id: req.params.id,
@@ -182,172 +213,167 @@ export const updateBought = async (req, res) => {
       },
       transaction
     })
+    console.log("two");
 
     if (!bought) {
       await transaction.rollback()
       return res.status(404).json({ message: "Bought item not found" })
     }
 
-    // Get the old fraction and quantity for comparison
-    const oldFraction = await Fraction.findOne({
-      where: { id: bought.fractionId }
-    })
-    const oldQuantityInUnits = bought.quantity * oldFraction.ratio
+    // Check if shop exists and belongs to the business
+    if (shopId) {
+      const shop = await Shop.findOne({
+        where: {
+          id: shopId,
+          businessId: req.user.businessId,
+        },
+        transaction
+      })
 
-    // Get the new fraction
-    const newFraction = await Fraction.findOne({
-      where: { id: fractionId }
+      if (!shop) {
+        await transaction.rollback()
+        return res.status(404).json({ message: "Shop not found" })
+      }
+    }
+    console.log("three");
+
+    // Get the fraction being used
+    const fraction = await Fraction.findOne({
+      where: { id: fractionId || bought.fractionId }
     })
 
-    if (!newFraction) {
+    if (!fraction) {
       await transaction.rollback()
       return res.status(404).json({ message: "Fraction not found" })
     }
 
-    // Convert new quantity to units
-    const newQuantityInUnits = quantity * newFraction.ratio
+    // Convert quantity to units based on fraction ratio
+    const quantityInUnits = (quantity || bought.quantity) * fraction.ratio
+    console.log("four");
+
+    // Update available item
+    if (bought.availableItemId) {
+      const availableItem = await AvailableItem.findByPk(bought.availableItemId, { transaction })
+      if (availableItem) {
+        // Remove old quantity from available item
+        availableItem.quantity = parseFloat(availableItem.quantity) - (bought.quantity * fraction.ratio)
+        if (availableItem.quantity <= 0) {
+          await availableItem.destroy({ transaction })
+        } else {
+          await availableItem.save({ transaction })
+        }
+      }
+    }
+    console.log("five");
+
+    // Find or create available item for the new shop
+    const newShopId = shopId || bought.shopId
+    const existingAvailableItem = await AvailableItem.findOne({
+      where: {
+        itemId: bought.itemId,
+        businessId: req.user.businessId,
+        shopId: newShopId,
+      },
+      transaction
+    })
+    console.log("six");
+
+    let availableItem;
+    if (existingAvailableItem) {
+      // Update existing available item by adding the new quantity
+      existingAvailableItem.quantity = quantityInUnits + parseFloat(existingAvailableItem.quantity)
+      existingAvailableItem.soldPrice = fractionSoldPrice || bought.fractionSoldPrice
+      await existingAvailableItem.save({ transaction })
+      availableItem = existingAvailableItem;
+    } else {
+      // Create new available item with the current quantity
+      availableItem = await AvailableItem.create({
+        itemId: bought.itemId,
+        businessId: req.user.businessId,
+        quantity: quantityInUnits,
+        soldPrice: fractionSoldPrice || bought.fractionSoldPrice,
+        shopId: newShopId,
+      }, { transaction })
+    }
+    console.log("seven");
 
     // Update bought item
     await bought.update({
-      fractionId,
-      fractionPurchasePrice,
-      fractionSoldPrice,
-      quantity,
-      location,
-      expiryDate: expiryDate || null,
-      salesmanId,
+      fractionId: fractionId || bought.fractionId,
+      fractionPurchasePrice: fractionPurchasePrice || bought.fractionPurchasePrice,
+      fractionSoldPrice: fractionSoldPrice || bought.fractionSoldPrice,
+      quantity: quantity || bought.quantity,
+      location: location || bought.location,
+      expiryDate: expiryDate || bought.expiryDate,
+      shopId: newShopId,
+      available_items_count: availableItem.quantity / fraction.ratio,
+      availableItemId: availableItem.id,
     }, { transaction })
+    console.log("eight");
 
-    // Find existing available item for old salesman
-    const oldAvailableItem = await AvailableItem.findOne({
-      where: {
-        itemId: bought.itemId,
-        businessId: req.user.businessId,
-        salesmanId: bought.salesmanId,
-      },
+    // Fetch the updated bought item with its item and shop
+    const updatedBought = await ItemBought.findByPk(bought.id, {
+      include: [
+        { model: Item },
+        { model: Shop, attributes: ['id', 'name', 'address'] },
+        { model: AvailableItem }
+      ],
       transaction
     })
-
-    if (oldAvailableItem) {
-      // Remove the old quantity from old salesman's available items
-      oldAvailableItem.quantity -= oldQuantityInUnits
-      if (oldAvailableItem.quantity <= 0) {
-        await oldAvailableItem.destroy({ transaction })
-      } else {
-        await oldAvailableItem.save({ transaction })
-      }
-    }
-
-    // Find or create available item for new salesman
-    const newAvailableItem = await AvailableItem.findOne({
-      where: {
-        itemId: bought.itemId,
-        businessId: req.user.businessId,
-        salesmanId: salesmanId,
-      },
-      transaction
-    })
-
-    if (newAvailableItem) {
-      // Add the new quantity to new salesman's available items
-      newAvailableItem.quantity += newQuantityInUnits
-      newAvailableItem.soldPrice = fractionSoldPrice
-      await newAvailableItem.save({ transaction })
-    } else {
-      // Create new available item for new salesman
-      await AvailableItem.create({
-        itemId: bought.itemId,
-        businessId: req.user.businessId,
-        quantity: newQuantityInUnits,
-        soldPrice: fractionSoldPrice,
-        salesmanId,
-      }, { transaction })
-    }
-
+    console.log("nine");
     await transaction.commit()
-    res.json(bought)
+    res.json(updatedBought)
   } catch (error) {
+    console.log("error: ", error);
+
     await transaction.rollback()
     res.status(500).json({ message: "Error updating bought item", error: error.message })
   }
 }
 
 export const deleteBought = async (req, res) => {
+  const transaction = await sequelize.transaction()
   try {
     const bought = await ItemBought.findOne({
       where: {
         id: req.params.id,
         businessId: req.user.businessId,
       },
+      transaction
     })
 
     if (!bought) {
+      await transaction.rollback()
       return res.status(404).json({ message: "Bought item not found" })
     }
 
-    await bought.destroy()
-
-    // Get all bought items for this item
-    const boughts = await ItemBought.findAll({
-      where: { 
-        itemId: bought.itemId,
-        businessId: req.user.businessId,
-      },
-      include: [{ model: Item, include: [{ model: Fraction }] }],
-    });
-
-    // Calculate total bought quantity in unit fractions
-    let totalBought = 0;
-    for (const bought of boughts) {
-      const unitQuantity = await convertToUnitQuantity(bought.itemId, bought.fractionId, bought.quantity);
-      totalBought += unitQuantity;
+    // Update available item
+    if (bought.availableItemId) {
+      const availableItem = await AvailableItem.findByPk(bought.availableItemId, { transaction })
+      if (availableItem) {
+        // Get the fraction to calculate the quantity to remove
+        const fraction = await Fraction.findOne({
+          where: { id: bought.fractionId }
+        })
+        
+        if (fraction) {
+          const quantityToRemove = bought.quantity * fraction.ratio
+          availableItem.quantity = parseFloat(availableItem.quantity) - quantityToRemove
+          
+          if (availableItem.quantity <= 0) {
+            await availableItem.destroy({ transaction })
+          } else {
+            await availableItem.save({ transaction })
+          }
+        }
+      }
     }
 
-    // Get all sold items for this item
-    const solds = await SoldItem.findAll({
-      where: { 
-        itemId: bought.itemId,
-        businessId: req.user.businessId,
-      },
-      include: [{ model: Item, include: [{ model: Fraction }] }],
-    });
-
-    // Calculate total sold quantity in unit fractions
-    let totalSold = 0;
-    for (const sold of solds) {
-      const unitQuantity = await convertToUnitQuantity(sold.itemId, sold.fractionId, sold.quantity);
-      totalSold += unitQuantity;
-    }
-
-    // Calculate available quantity
-    const availableQuantity = totalBought - totalSold;
-
-    // Find existing available item
-    const existingAvailableItem = await AvailableItem.findOne({
-      where: {
-        itemId: bought.itemId,
-        businessId: req.user.businessId,
-      },
-    });
-
-    if (existingAvailableItem) {
-      // Update existing available item
-      await existingAvailableItem.update({
-        quantity: availableQuantity,
-        soldPrice: bought.fractionSoldPrice,
-      });
-    } else {
-      // Create new available item only if it doesn't exist
-      await AvailableItem.create({
-        itemId: bought.itemId,
-        businessId: req.user.businessId,
-        quantity: availableQuantity,
-        soldPrice: bought.fractionSoldPrice,
-      });
-    }
-
+    await bought.destroy({ transaction })
+    await transaction.commit()
     res.json({ message: "Bought item deleted successfully" })
   } catch (error) {
+    await transaction.rollback()
     res.status(500).json({ message: "Error deleting bought item", error: error.message })
   }
 }

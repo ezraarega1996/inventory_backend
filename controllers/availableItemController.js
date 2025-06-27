@@ -82,26 +82,26 @@ export const calculateAvailableItems = async (req, res) => {
 
 export const getAllAvailableItems = async (req, res) => {
   try {
+    const { shopId } = req.query;
+    const where = { businessId: req.user.businessId };
+    // Only restrict by shopId for salesmen
+    if (req.user.role === 'salesman') {
+      where.shopId = req.user.shopId;
+    } else if (shopId) {
+      where.shopId = shopId;
+    }
     const availableItems = await AvailableItem.findAll({
-      where: { businessId: req.user.businessId },
+      where,
       include: [
         { 
           model: Item,
           as: 'item',
           include: [{ model: Fraction, as: "fractions" }]
         },
-        {
-          model: User,
-          as: 'salesman',
-          attributes: ['id', 'name', 'username']
-        },
+
         {
           model: ItemBought,
           as: 'boughtTransactions',
-          // where: { 
-          //   businessId: req.user.businessId,
-          //   itemId: sequelize.col('AvailableItem.itemId'e)
-          // },
           required: false,
           include: [
             {
@@ -114,12 +114,6 @@ export const getAllAvailableItems = async (req, res) => {
           model: SoldItem,
           as: 'soldTransactions',
           required: false,
-          // include: [
-          //   {
-          //     model: Fraction,
-          //     attributes: ['id', 'name', 'ratio']
-          //   }
-          // ]
         }
       ],
       order: [["createdAt", "DESC"]],
@@ -156,10 +150,10 @@ export const getAvailableItemById = async (req, res) => {
   }
 }
 
-export const assignToSalesman = async (req, res) => {
+export const assignToShop = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const { salesmanId, quantity, soldPrice } = req.body;
+    const { shopId, quantity, soldPrice } = req.body;
     const { id } = req.params;
 
     // Find the available item
@@ -181,13 +175,13 @@ export const assignToSalesman = async (req, res) => {
       return res.status(400).json({ message: "Quantity cannot be greater than available quantity" });
     }
 
-    // Create a new available item for the salesman
+    // Create a new available item for the shop
     await AvailableItem.create({
       itemId: availableItem.itemId,
       businessId: req.user.businessId,
       quantity,
       soldPrice,
-      salesmanId,
+      shopId,
     }, { transaction });
 
     // Update the original available item
@@ -196,10 +190,10 @@ export const assignToSalesman = async (req, res) => {
     }, { transaction });
 
     await transaction.commit();
-    res.json({ message: "Item assigned to salesman successfully" });
+    res.json({ message: "Item assigned to shop successfully" });
   } catch (error) {
     await transaction.rollback();
-    res.status(500).json({ message: "Error assigning item to salesman", error: error.message });
+    res.status(500).json({ message: "Error assigning item to shop", error: error.message });
   }
 };
 
