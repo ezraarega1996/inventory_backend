@@ -1,10 +1,12 @@
 import { Item, Category, Fraction } from "../models/index.js"
+import { fn, col } from "sequelize"
 
 export const getAllItems = async (req, res) => {
   try {
     const items = await Item.findAll({
       where: { businessId: req.user.businessId },
       include: [{ model: Category }, { model: Fraction, as: "fractions" }],
+      order: [[fn('LOWER', col('Item.name')), 'ASC']],
     })
     res.json(items)
   } catch (error) {

@@ -1,5 +1,5 @@
 import { AvailableItem, Item, Bought, SoldItem, Fraction, User, ItemBought } from "../models/index.js"
-import { Op } from "sequelize"
+import { Op, fn, col } from "sequelize"
 import sequelize from "../models/database.js"
 
 export const calculateAvailableItems = async (req, res) => {
@@ -116,11 +116,12 @@ export const getAllAvailableItems = async (req, res) => {
           required: false,
         }
       ],
-      order: [["createdAt", "DESC"]],
+      order: [[sequelize.literal('LOWER("item"."name")'), 'ASC']],
     })
 
     res.json(availableItems)
   } catch (error) {
+    console.log("error fetching available items.", error);
     res.status(500).json({ message: "Error fetching available items", error: error.message })
   }
 }

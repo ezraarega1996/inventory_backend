@@ -89,9 +89,9 @@ export const createBought = async (req, res) => {
   
   const transaction = await sequelize.transaction()
   try {
-    const { itemId, fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate, shopId } = req.body
+    const { itemId, fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, expiryDate, shopId } = req.body
 
-    console.log("Extracted data:", { itemId, fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate, shopId })
+    console.log("Extracted data:", { itemId, fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, expiryDate, shopId })
 
     // Check if item exists and belongs to the business
     const item = await Item.findOne({
@@ -173,7 +173,6 @@ export const createBought = async (req, res) => {
       fractionPurchasePrice,
       fractionSoldPrice,
       quantity,
-      location,
       expiryDate: expiryDate || null,
       businessId: req.user.businessId,
       shopId,
@@ -204,7 +203,7 @@ export const createBought = async (req, res) => {
 export const updateBought = async (req, res) => {
   const transaction = await sequelize.transaction()
   try {
-    const { fractionId, fractionPurchasePrice, fractionSoldPrice, quantity, location, expiryDate, shopId } = req.body
+    const { fractionId, fractionPurchasePrice, fractionSoldPrice, quantity,  expiryDate, shopId } = req.body
     console.log("one");
     const bought = await ItemBought.findOne({
       where: {
@@ -303,7 +302,6 @@ export const updateBought = async (req, res) => {
       fractionPurchasePrice: fractionPurchasePrice || bought.fractionPurchasePrice,
       fractionSoldPrice: fractionSoldPrice || bought.fractionSoldPrice,
       quantity: quantity || bought.quantity,
-      location: location || bought.location,
       expiryDate: expiryDate || bought.expiryDate,
       shopId: newShopId,
       available_items_count: availableItem.quantity / fraction.ratio,
