@@ -3,17 +3,17 @@ import { User, Business, sequelize } from "../models/index.js"
 
 export const register = async (req, res) => {
   try {
-    const { name, phone, location, username, password, email, role, businessId } = req.body
+    const { name, phone, location, username, password, role, businessId } = req.body
 
     // Check if user already exists
     const existingUser = await User.findOne({
       where: {
-        [sequelize.Op.or]: [{ username }, { email }],
+        [sequelize.Op.or]: [{ username }],
       },
     })
 
     if (existingUser) {
-      return res.status(400).json({ message: "Username or email already exists" })
+      return res.status(400).json({ message: "Username already exists" })
     }
 
     // If businessId is provided, check if it exists
@@ -31,7 +31,6 @@ export const register = async (req, res) => {
       location,
       username,
       password, // Will be hashed by the model hook
-      email,
       role: role || "salesman",
       businessId,
     })
@@ -45,7 +44,6 @@ export const register = async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
         role: user.role,
         businessId: user.businessId,
       },
@@ -119,7 +117,6 @@ export const login = async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email,
         phone: user.phone,
         role: user.role,
         businessId: user.businessId,

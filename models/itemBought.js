@@ -32,10 +32,6 @@ const ItemBought = sequelize.define("ItemBought", {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
-  location: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
   expiryDate: {
     type: DataTypes.DATE,
     allowNull: true,
