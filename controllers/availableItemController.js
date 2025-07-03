@@ -114,6 +114,13 @@ export const getAllAvailableItems = async (req, res) => {
           model: SoldItem,
           as: 'soldTransactions',
           required: false,
+          include: [
+            {
+              model: User,
+              as: 'salesman',
+              attributes: ['id', 'name', 'username']
+            }
+          ]
         }
       ],
       order: [[sequelize.literal('LOWER("item"."name")'), 'ASC']],
