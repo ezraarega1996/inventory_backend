@@ -1,4 +1,4 @@
-import { AvailableItem, Item, Bought, SoldItem, Fraction, User, ItemBought } from "../models/index.js"
+import { AvailableItem, Item, Bought, SoldItem, Fraction, User, ItemBought, Shop } from "../models/index.js"
 import { Op, fn, col } from "sequelize"
 import sequelize from "../models/database.js"
 
@@ -98,7 +98,11 @@ export const getAllAvailableItems = async (req, res) => {
           as: 'item',
           include: [{ model: Fraction, as: "fractions" }]
         },
-
+        {
+          model: Shop,
+          as: 'shop',
+          attributes: ['id', 'name', 'address'],
+        },
         {
           model: ItemBought,
           as: 'boughtTransactions',
