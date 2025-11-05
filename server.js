@@ -54,9 +54,9 @@ app.use("/api/shops", shopRoutes)
 
 // Test database connection
 connectWithRetry().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server listening on port ${PORT}`);
-  });
+  app.listen(5000, '0.0.0.0', () => {
+  console.log('Server is running on port 5000');
+});
 });
 
 
