@@ -39,6 +39,10 @@ app.use(express.json())
 // Special handling for Stripe webhook
 app.use("/api/payments/webhook", express.raw({ type: "application/json" }))
 
+app.get("/", (req, res) => {
+  res.send("Inventory Management API is running")
+})
+
 // Routes
 app.use("/api/auth", authRoutes)
 app.use("/api/users", userRoutes)
