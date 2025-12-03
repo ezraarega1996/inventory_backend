@@ -36,6 +36,10 @@ const SoldItem = sequelize.define("SoldItem", {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
   },
+  profit: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
   status: {
     type: DataTypes.ENUM("pending", "completed", "cancelled"),
     defaultValue: "completed",
