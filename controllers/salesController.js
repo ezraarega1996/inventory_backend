@@ -111,6 +111,12 @@ export const createSale = async (req, res) => {
     availableItem.quantity = parseFloat(availableItem.quantity) - quantityInUnits;
     await availableItem.save();
 
+    // Calculate profit = (sold price - purchase price) * quantity
+    // Here, "amount" is total sold amount; derive unit selling price if needed
+    const sellingPricePerUnit = amount / quantityInUnits;
+    const purchasePricePerUnit = fraction.purchasePrice / fraction.ratio;
+    const profit = (sellingPricePerUnit - purchasePricePerUnit) * quantityInUnits;
+
     // Create sale
     const sale = new SoldItem({
       itemId,
@@ -122,6 +128,7 @@ export const createSale = async (req, res) => {
       businessId: req.user.businessId,
       available_items_count: availableItem.quantity / fraction.ratio,
       availableItemId: availableItem.id,
+      profit,
     });
 
     await sale.save();
