@@ -31,7 +31,7 @@ const connectWithRetry = async (retries = 10, delay = 5000) => {
 
 const syncDatabase = async () => {
   try {
-    await sequelize.sync();
+    await sequelize.sync({ alter: true });
     console.log('✅ Database synchronized');
   } catch (error) {
     console.error('❌ Database synchronization failed:', error.message);

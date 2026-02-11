@@ -36,7 +36,7 @@ export const getFractionById = async (req, res) => {
 
 export const createFraction = async (req, res) => {
   try {
-    const { name, ratio, price, itemId, isUnit } = req.body
+    const { name, ratio, sellingPrice, purchasePrice, itemId, isUnit } = req.body
 
     // Check if item exists and belongs to the business
     const item = await Item.findOne({
@@ -71,7 +71,8 @@ export const createFraction = async (req, res) => {
     const fraction = await Fraction.create({
       name,
       ratio,
-      price,
+      sellingPrice,
+      purchasePrice,
       itemId,
       businessId: req.user.businessId,
       isUnit: isUnit ?? false,
@@ -90,7 +91,7 @@ export const createFraction = async (req, res) => {
 
 export const updateFraction = async (req, res) => {
   try {
-    const { name, ratio, price, isUnit } = req.body
+    const { name, ratio, sellingPrice, purchasePrice, isUnit } = req.body
     const fraction = await Fraction.findOne({
       where: {
         id: req.params.id,
@@ -123,7 +124,8 @@ export const updateFraction = async (req, res) => {
     // Update fraction
     fraction.name = name || fraction.name
     fraction.ratio = ratio || fraction.ratio
-    fraction.price = price || fraction.price
+    fraction.sellingPrice = sellingPrice ?? fraction.sellingPrice
+    fraction.purchasePrice = purchasePrice ?? fraction.purchasePrice
     fraction.isUnit = isUnit ?? fraction.isUnit
     await fraction.save()
 

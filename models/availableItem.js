@@ -1,6 +1,6 @@
 import { DataTypes } from "sequelize"
 import sequelize from "./database.js"
-import { User, Item, ItemBought, SoldItem } from "./index.js"
+import {  Item, Shop } from "./index.js"
 import Business from "./business.js"
 
 const AvailableItem = sequelize.define("AvailableItem", {
@@ -26,22 +26,23 @@ const AvailableItem = sequelize.define("AvailableItem", {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
-  salesmanId: {
+  shopId: {
     type: DataTypes.UUID,
-    allowNull: true,
+    allowNull: false,
     references: {
-      model: User,
-      key: "id",
+      model: 'Shops',
+      key: 'id',
     },
   },
 })
 
 // Define associations
-AvailableItem.belongsTo(User, { as: 'salesman', foreignKey: "salesmanId" })
 AvailableItem.belongsTo(Item, {as: 'item', foreignKey: "itemId" })
 
 // Add business association
 AvailableItem.belongsTo(Business, { foreignKey: "businessId" })
 Business.hasMany(AvailableItem, { foreignKey: "businessId" })
+
+AvailableItem.belongsTo(Shop, { foreignKey: 'shopId', as: 'shop' })
 
 export default AvailableItem 

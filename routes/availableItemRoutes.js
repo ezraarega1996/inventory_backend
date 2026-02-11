@@ -3,7 +3,7 @@ import {
   calculateAvailableItems,
   getAllAvailableItems,
   getAvailableItemById,
-  assignToSalesman,
+  assignToShop,
   getTodaySalesBySalesman,
 } from "../controllers/availableItemController.js"
 import { authenticate } from "../middleware/auth.js"
@@ -14,6 +14,6 @@ router.get("/calculate", authenticate, calculateAvailableItems)
 router.get("/today-sales", authenticate, getTodaySalesBySalesman)
 router.get("/", authenticate, getAllAvailableItems)
 router.get("/:id", authenticate, getAvailableItemById)
-router.post("/:id/assign", authenticate, assignToSalesman)
+router.post("/:id/assign", authenticate, assignToShop)
 
 export default router 

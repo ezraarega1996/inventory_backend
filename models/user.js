@@ -32,18 +32,22 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: true,
-      },
-    },
     role: {
       type: DataTypes.ENUM("admin", "owner", "salesman"),
       allowNull: false,
       defaultValue: "salesman",
+    },
+    businessId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: Business,
+        key: "id",
+      },
+    },
+    shopId: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
     isActive: {
       type: DataTypes.BOOLEAN,

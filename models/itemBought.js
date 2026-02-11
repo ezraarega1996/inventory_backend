@@ -2,7 +2,7 @@ import { DataTypes } from "sequelize"
 import sequelize from "./database.js"
 import Item from "./item.js"
 import Business from "./business.js"
-import User from "./user.js"
+import Shop from "./shop.js"
 import Fraction from "./fraction.js"
 import AvailableItem from "./availableItem.js"
 
@@ -32,10 +32,6 @@ const ItemBought = sequelize.define("ItemBought", {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
-  location: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
   expiryDate: {
     type: DataTypes.DATE,
     allowNull: true,
@@ -44,11 +40,11 @@ const ItemBought = sequelize.define("ItemBought", {
     type: DataTypes.UUID,
     allowNull: false,
   },
-  salesmanId: {
+  shopId: {
     type: DataTypes.UUID,
-    allowNull: true,
+    allowNull: false,
     references: {
-      model: User,
+      model: Shop,
       key: "id",
     },
   },
@@ -72,7 +68,7 @@ const ItemBought = sequelize.define("ItemBought", {
 
 ItemBought.belongsTo(Item, { foreignKey: "itemId" })
 ItemBought.belongsTo(Business, { foreignKey: "businessId" })
-ItemBought.belongsTo(User, { as: 'salesman', foreignKey: "salesmanId" })
+ItemBought.belongsTo(Shop, { foreignKey: "shopId" })
 ItemBought.belongsTo(Fraction, { foreignKey: "fractionId" })
 ItemBought.belongsTo(AvailableItem, { foreignKey: "availableItemId" })
 

@@ -80,7 +80,7 @@ export const getAllBusinesses = async (req, res) => {
         {
           model: User,
           where: { role: "owner" },
-          attributes: ["id", "name", "email", "phone"],
+          attributes: ["id", "name", "phone"],
           required: false,
         },
         {
@@ -108,7 +108,7 @@ export const getBusinessById = async (req, res) => {
         {
           model: User,
           where: { role: "owner" },
-          attributes: ["id", "name", "email", "phone"],
+          attributes: ["id", "name", "phone"],
           required: false,
         },
         {
@@ -139,7 +139,7 @@ export const getBusinessById = async (req, res) => {
 // Update business
 export const updateBusiness = async (req, res) => {
   try {
-    const { name, address, phone, email, logo } = req.body
+    const { name, address, phone, logo } = req.body
     const business = await Business.findByPk(req.params.id)
 
     if (!business) {
@@ -155,7 +155,6 @@ export const updateBusiness = async (req, res) => {
     if (name) business.name = name
     if (address) business.address = address
     if (phone) business.phone = phone
-    if (email) business.email = email
     if (logo) business.logo = logo
 
     await business.save()

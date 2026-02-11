@@ -17,9 +17,14 @@ const Fraction = sequelize.define("Fraction", {
     type: DataTypes.FLOAT,
     allowNull: false,
   },
-  price: {
+  sellingPrice: {
     type: DataTypes.FLOAT,
     allowNull: false,
+  },
+  purchasePrice: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+    defaultValue: 0,
   },
   isUnit: {
     type: DataTypes.BOOLEAN,

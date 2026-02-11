@@ -1,10 +1,12 @@
 import { Item, Category, Fraction } from "../models/index.js"
+import { fn, col } from "sequelize"
 
 export const getAllItems = async (req, res) => {
   try {
     const items = await Item.findAll({
       where: { businessId: req.user.businessId },
       include: [{ model: Category }, { model: Fraction, as: "fractions" }],
+      order: [[fn('LOWER', col('Item.name')), 'ASC']],
     })
     res.json(items)
   } catch (error) {
@@ -57,16 +59,22 @@ export const createItem = async (req, res) => {
     })
 
     // Create fractions if providede
-    if (fractions && Array.isArray(fractions)) {
-      const fractionPromises = fractions.map((fraction) =>
-        Fraction.create({
-          ...fraction,
-          itemId: item.id,
-          businessId: req.user.businessId,
-        }),
-      )
-      await Promise.all(fractionPromises)
-    }
+    // if (fractions && Array.isArray(fractions)) {
+    //   const fractionPromises = fractions.map((fraction) => {
+    //     const sellingPrice = fraction.sellingPrice ?? fraction.price ?? 0
+    //     const purchasePrice = fraction.purchasePrice ?? 0
+    //     return Fraction.create({
+    //       name: fraction.name,
+    //       ratio: fraction.ratio,
+    //       sellingPrice,
+    //       purchasePrice,
+    //       isUnit: fraction.isUnit ?? false,
+    //       itemId: item.id,
+    //       businessId: req.user.businessId,
+    //     })
+    //   })
+    //   await Promise.all(fractionPromises)
+    // }
 
     // Fetch the created item with its fractions
     const createdItem = await Item.findByPk(item.id, {
