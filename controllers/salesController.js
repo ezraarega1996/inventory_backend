@@ -69,8 +69,16 @@ export const createSale = async (req, res) => {
   try {
     const { itemId, fractionId, quantity, amount, shopId, profit } = req.body;
     const salesmanId = req.user.id;
-    const selectedShopId = req.user.role == "owner"? shopId : req.user.shopId;
 
+    // Always prefer the shopId coming from the frontend (it is derived from the
+    // selected AvailableItem's shop). Fallback to the user's assigned shopId
+    // only if the payload omits it.
+    const selectedShopId = shopId || req.user.shopId;
+
+    if (!selectedShopId) {
+      return res.status(400).json({ message: "shopId is required to create a sale" });
+    }
+    console.log("selectedShopId: ", selectedShopId)
     // Validate required fields
     if (!itemId || !fractionId || !quantity || !amount) {
       return res.status(400).json({ message: 'All fields are required' });
@@ -96,8 +104,8 @@ export const createSale = async (req, res) => {
       where: {
         itemId,
         shopId: selectedShopId,
-        businessId: req.user.businessId
-      }
+        businessId: req.user.businessId,
+      },
     });
 
     if (!availableItem) {
@@ -122,8 +130,9 @@ export const createSale = async (req, res) => {
       businessId: req.user.businessId,
       available_items_count: availableItem.quantity / fraction.ratio,
       availableItemId: availableItem.id,
+      shopId: selectedShopId,
       // Use profit calculated on the frontend if provided; otherwise fall back to 0
-      profit: typeof profit === 'number' ? profit : 0,
+      profit: typeof profit === "number" ? profit : 0,
     });
 
     await sale.save();

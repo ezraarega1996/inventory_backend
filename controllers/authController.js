@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken"
-import { User, Business, sequelize } from "../models/index.js"
+import { User, Business, sequelize, Shop } from "../models/index.js"
 
 export const register = async (req, res) => {
   try {
@@ -67,7 +67,10 @@ export const login = async (req, res) => {
     // Find user by username
     const user = await User.findOne({
       where: { username },
-      include: [{ model: Business }],
+      include: [
+        { model: Business },
+        { model: Shop },
+      ],
     })
 
     console.log("User found:", user ? "Yes" : "No");
@@ -118,14 +121,26 @@ export const login = async (req, res) => {
         id: user.id,
         name: user.name,
         phone: user.phone,
+        location: user.location,
+        username: user.username,
         role: user.role,
         businessId: user.businessId,
+        shopId: user.shopId,
         business: user.Business
           ? {
               id: user.Business.id,
               name: user.Business.name,
               subscriptionStatus: user.Business.subscriptionStatus,
               subscriptionPlan: user.Business.subscriptionPlan,
+            }
+          : null,
+        shop: user.Shop
+          ? {
+              id: user.Shop.id,
+              name: user.Shop.name,
+              address: user.Shop.address,
+              businessId: user.Shop.businessId,
+              isActive: user.Shop.isActive,
             }
           : null,
       },

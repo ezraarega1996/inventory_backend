@@ -5,6 +5,7 @@ import User from "./user.js"
 import Business from "./business.js"
 import Fraction from "./fraction.js"
 import AvailableItem from "./availableItem.js"
+import Shop from "./shop.js"
 
 const SoldItem = sequelize.define("SoldItem", {
   id: {
@@ -60,6 +61,14 @@ const SoldItem = sequelize.define("SoldItem", {
       key: "id",
     },
   },
+  shopId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: "Shops",
+      key: "id",
+    },
+  },
 })
 
 SoldItem.belongsTo(Item, { foreignKey: "itemId" })
@@ -77,5 +86,8 @@ SoldItem.belongsTo(AvailableItem, { foreignKey: "availableItemId" })
 
 // Add the reverse association
 AvailableItem.hasMany(SoldItem, {as: "soldTransactions", foreignKey: "availableItemId" })
+
+// Associate each sale with a shop so frontend summaries can filter by shop
+SoldItem.belongsTo(Shop, { foreignKey: "shopId" })
 
 export default SoldItem
