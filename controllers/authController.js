@@ -152,3 +152,34 @@ export const login = async (req, res) => {
     res.status(500).json({ message: "Error logging in", error: error.message })
   }
 }
+
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+    const userId = req.user.id // From auth middleware
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current password and new password are required" })
+    }
+
+    const user = await User.findByPk(userId)
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await user.validatePassword(currentPassword)
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ message: "Current password is incorrect" })
+    }
+
+    // Update password
+    user.password = newPassword // Will be hashed by the model hook
+    await user.save()
+
+    res.json({ message: "Password changed successfully" })
+  } catch (error) {
+    console.error("Error changing password:", error)
+    res.status(500).json({ message: "Error changing password", error: error.message })
+  }
+}
